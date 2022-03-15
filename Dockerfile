@@ -3,6 +3,7 @@ FROM ubuntu:rolling AS base
 # NOTE: Make sure secret id=xerpi_gist,src=secret/xerpi_gist.txt is defined
 
 ARG MAKE_JOBS=1
+ARG INSTALL_DKP_PACKAGES=1
 
 # prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
@@ -14,6 +15,8 @@ ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 ENV VITASDK=/usr/local/vitasdk
 ENV PATH=${VITASDK}/bin:${PATH}
 
+ARG DKARM_RULES_VER=1.2.1
+ARG DKARM_CRTLS_VER=1.1.1
 ARG GCC_VER=11.2.0
 ARG BINUTILS_VER=2.37
 ARG NEWLIB_VER=4.2.0.20211231
@@ -26,11 +29,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt upgrade -y
 RUN apt install -y \
     make git-core cmake python3-dev build-essential bison flex \
+    libncurses5-dev libreadline-dev texinfo pkg-config \
     libssl-dev gpg wget \
-    sudo screen tmux \
     python3-pip python3-setuptools libglib2.0-dev libc6-dbg \
     autotools-dev automake autoconf liblz4-dev libelf-dev \
-    openssh-server openssh-client locales rsync \
     python2-dev libtinfo5 \
     libgmp-dev libmpfr-dev libmpc-dev mesa-common-dev libfreeimage-dev \
     zlib1g-dev libusb-dev libudev-dev libexpat1-dev \
@@ -40,8 +42,7 @@ RUN apt install -y \
 # install dkp-pacman
 RUN wget https://github.com/devkitPro/pacman/releases/latest/download/devkitpro-pacman.amd64.deb \
     && apt install -y ./devkitpro-pacman.amd64.deb \
-    && rm ./devkitpro-pacman.amd64.deb \
-    && dkp-pacman -Syu --noconfirm
+    && rm ./devkitpro-pacman.amd64.deb
 
 # install Mako for UAM
 RUN python3 -m pip install Mako
@@ -51,17 +52,34 @@ RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh 
     && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
 
 # add a new user vita2hos
-RUN useradd -s /bin/bash -m vita2hos \
-    && echo "vita2hos:vita2hos" | chpasswd
+RUN useradd -s /bin/bash -m vita2hos
 
-# install dkp packages
-RUN dkp-pacman -Syu --noconfirm \
-    general-tools devkitarm-rules switch-dev switch-portlibs 3ds-dev 3ds-portlibs
+# install dkp packages (only if building locally since dkp blocks github -.-)
+RUN if [ "$INSTALL_DKP_PACKAGES" -eq "1" ]; then \
+        ln -s /proc/self/mounts /etc/mtab \
+        && dkp-pacman -Syu --noconfirm \
+            general-tools devkitarm-rules \
+            switch-dev switch-portlibs \
+            3ds-dev 3ds-portlibs ; \
+    fi
+
+# create $DEVKITPRO and $DEVKITARM if not building locally
+# and add env vars for all users
+RUN if [ "$INSTALL_DKP_PACKAGES" -ne "1" ] ; then \
+        mkdir -p $DEVKITARM \
+        && echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
+        && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
+        && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
+        && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh ; \
+    fi
 
 # give vita2hos ownership of $DEVKITPRO
 RUN chown vita2hos:vita2hos -R $DEVKITPRO
 
 FROM base AS builder
+
+# Install sudo for vitasdk
+RUN apt install -y sudo
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -76,7 +94,7 @@ RUN git clone https://github.com/vitasdk/vdpm \
     && cd vdpm && ./bootstrap-vitasdk.sh \
     && ./install-all.sh
 
-# install and build samples from vitasdk
+# download and build samples from vitasdk
 USER vita2hos
 WORKDIR /home/vita2hos/tools/vitasdk
 RUN git clone https://github.com/vitasdk/samples \
@@ -153,7 +171,6 @@ RUN cd newlib-$NEWLIB_VER \
        --enable-newlib-mb \
        --disable-newlib-wide-orient \
     && make -j $MAKE_JOBS all 2>&1 | tee ./newlib-build-logs.log
-USER root
 RUN cd newlib-build && make install
 
 # build and install gcc stage 2 (with newlib)
@@ -164,6 +181,24 @@ RUN cd gcc-build && make install
 
 # remove sys-include dir in devkitARM/arm-none-eabi
 RUN rm -rf $DEVKITARM/$TARGET/sys-include
+
+# build and install dkp general-tools if not building locally
+RUN if [ "$INSTALL_DKP_PACKAGES" -ne "1" ] ; then \
+        git clone https://github.com/devkitPro/general-tools \
+        && cd general-tools && ./autogen.sh \
+        && ./configure --prefix=${DEVKITPRO}/tools && make -j $MAKE_JOBS \
+        && make install ; \
+    fi
+
+# install devkitARM rules and crt0 files if not building locally
+RUN if [ "$INSTALL_DKP_PACKAGES" -ne "1" ] ; then \
+        wget https://github.com/devkitPro/devkitarm-rules/archive/refs/tags/v${DKARM_RULES_VER}.tar.gz -O devkitarm-rules-${DKARM_RULES_VER}.tar.gz \
+        && wget https://github.com/devkitPro/devkitarm-crtls/archive/refs/tags/v${DKARM_CRTLS_VER}.tar.gz -O devkitarm-crtls-${DKARM_CRTLS_VER}.tar.gz \
+        && tar -xvf ./devkitarm-rules-${DKARM_RULES_VER}.tar.gz \
+        && cd devkitarm-rules-${DKARM_RULES_VER} && make install && cd .. \
+        && tar -xvf ./devkitarm-crtls-${DKARM_CRTLS_VER}.tar.gz \
+        && cd devkitarm-crtls-${DKARM_CRTLS_VER} && make install ; \
+    fi
 
 # Clone private libnx fork and install it
 USER root
@@ -255,8 +290,11 @@ FROM base
 COPY --from=builder --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=builder --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
-# start the ssh service and run the daemon in foreground mode
-USER root
-RUN service ssh start
-EXPOSE 22
-CMD ["/usr/sbin/sshd","-D"]
+USER vita2hos
+ENTRYPOINT [ "/bin/bash" ]
+
+# # start the ssh service and run the daemon in foreground mode
+# USER root
+# RUN service ssh start
+# EXPOSE 22
+# CMD ["/usr/sbin/sshd","-D"]
