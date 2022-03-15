@@ -51,7 +51,7 @@ RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh 
     && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
 
 # add a new user vita2hos
-RUN useradd -s /bin/bash -mG sudo vita2hos \
+RUN useradd -s /bin/bash -m vita2hos \
     && echo "vita2hos:vita2hos" | chpasswd
 
 # install dkp packages
