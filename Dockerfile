@@ -1,6 +1,6 @@
 FROM ubuntu:rolling AS base
 
-# NOTE: Make sure secret id=xerpi_gist,src=xerpi_gist.txt is defined
+# NOTE: Make sure secret id=xerpi_gist,src=secret/xerpi_gist.txt is defined
 
 ARG MAKE_JOBS=1
 
