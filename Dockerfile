@@ -206,7 +206,7 @@ USER vita2hos
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32
 RUN cd libnx && make -C nx/ -f Makefile.32 install
 
-# Clone private switch-tools fork and install it
+# Clone switch-tools fork and install it
 USER root
 RUN --mount=type=ssh git clone git@github.com:xerpi/switch-tools --branch arm-32-bit-support && chown vita2hos:vita2hos -R switch-tools
 USER vita2hos
@@ -290,9 +290,3 @@ COPY --from=builder --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 ENTRYPOINT [ "/bin/bash" ]
-
-# # start the ssh service and run the daemon in foreground mode
-# USER root
-# RUN service ssh start
-# EXPOSE 22
-# CMD ["/usr/sbin/sshd","-D"]
