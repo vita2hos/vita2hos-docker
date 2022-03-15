@@ -52,7 +52,7 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: |
-            "MAKE_JOBS=$nproc"
+            "MAKE_JOBS=1"
             "INSTALL_DKP_PACKAGES=0"
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
