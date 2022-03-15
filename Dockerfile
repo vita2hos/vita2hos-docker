@@ -30,7 +30,7 @@ RUN apt update && apt upgrade -y
 RUN apt install -y \
     make git-core cmake python3-dev build-essential bison flex \
     libncurses5-dev libreadline-dev texinfo pkg-config \
-    libssl-dev gpg wget \
+    libssl-dev gpg wget curl \
     python3-pip python3-setuptools libglib2.0-dev libc6-dbg \
     autotools-dev automake autoconf liblz4-dev libelf-dev \
     python2-dev libtinfo5 \
@@ -38,11 +38,6 @@ RUN apt install -y \
     zlib1g-dev libusb-dev libudev-dev libexpat1-dev \
     xz-utils bzip2 python \
     meson ninja-build
-
-# install dkp-pacman
-RUN wget https://github.com/devkitPro/pacman/releases/latest/download/devkitpro-pacman.amd64.deb \
-    && apt install -y ./devkitpro-pacman.amd64.deb \
-    && rm ./devkitpro-pacman.amd64.deb
 
 # install Mako for UAM
 RUN python3 -m pip install Mako
@@ -54,9 +49,12 @@ RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh 
 # add a new user vita2hos
 RUN useradd -s /bin/bash -m vita2hos
 
-# install dkp packages (only if building locally since dkp blocks github -.-)
+# install dkp-pacman and some packages (only if building locally since dkp blocks github -.-)
 RUN if [ "$INSTALL_DKP_PACKAGES" -eq "1" ]; then \
-        ln -s /proc/self/mounts /etc/mtab \
+        wget https://github.com/devkitPro/pacman/releases/latest/download/devkitpro-pacman.amd64.deb \
+        && apt install -y ./devkitpro-pacman.amd64.deb \
+        && rm ./devkitpro-pacman.amd64.deb \
+        && ln -s /proc/self/mounts /etc/mtab \
         && dkp-pacman -Syu --noconfirm \
             general-tools devkitarm-rules \
             switch-dev switch-portlibs \
