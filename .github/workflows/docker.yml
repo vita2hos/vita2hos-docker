@@ -47,7 +47,7 @@ jobs:
       - name: Start SSH-Agent
         uses: webfactory/ssh-agent@v0.5.4
         with:
-          ssh-private-key: ${{ XERPI_DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.XERPI_DEPLOY_KEY }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2.10.0
