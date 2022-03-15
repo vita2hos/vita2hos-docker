@@ -198,6 +198,12 @@ RUN if [ "$INSTALL_DKP_PACKAGES" -ne "1" ] ; then \
         && cd devkitarm-crtls-${DKARM_CRTLS_VER} && make install ; \
     fi
 
+# Clone and install devkitARM gdb with python3 support
+RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
+    && cd binutils-gdb \
+    && ./configure --with-python=/usr/bin/python3 --prefix=/opt/devkitpro/devkitARM --target=arm-none-eabi \
+    && make && make install
+
 # Clone private libnx fork and install it
 USER root
 WORKDIR /home/vita2hos/tools
