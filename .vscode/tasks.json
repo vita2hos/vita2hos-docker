@@ -3,27 +3,29 @@
     "tasks": [
         {
             "label": "Build Docker Image (with DKP)",
-            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$nproc --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
+            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
                 "showReuseMessage": false,
-                "clear": true
+                "clear": true,
+                "focus": true
             },
             "group": "build"
         },
         {
             "label": "Build Docker Image (without DKP)",
-            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$nproc --build-arg INSTALL_DKP_PACKAGES=0 --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
+            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --build-arg INSTALL_DKP_PACKAGES=0 --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
                 "showReuseMessage": false,
-                "clear": true
+                "clear": true,
+                "focus": true
             },
             "group": "build"
         },
@@ -39,6 +41,20 @@
                 "panel": "shared",
                 "showReuseMessage": false,
                 "clear": true
+            }
+        },
+        {
+            "label": "Clear buildx cache",
+            "command": "sudo docker buildx prune -f",
+            "type": "shell",
+            "args": [],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true,
+                "focus": true
             }
         }
     ]
