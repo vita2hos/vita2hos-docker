@@ -17,7 +17,7 @@ If you just want to build your project with it do this:
 ```bash
 sudo docker run --rm -it -v $pwd:/workdir ghcr.io/tsrberry/vita2hos-docker:<tag>
 # a new bash will be spawned
-make -j $nproc
+make -j $(($(nproc) - 2))
 exit
 ```
 
@@ -34,5 +34,5 @@ exit
 3. Run this command to build the image and add the tag `vita2hos-docker` to it
 
     ```bash
-    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$nproc --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .
+    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .
     ```
