@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Build Docker Image (with DKP)",
-            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
+            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
@@ -17,7 +17,7 @@
         },
         {
             "label": "Build Docker Image (without DKP)",
-            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --build-arg INSTALL_DKP_PACKAGES=0 --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
+            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --build-arg INSTALL_DKP_PACKAGES=0 --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
@@ -32,6 +32,34 @@
         {
             "label": "Analyze Docker Image",
             "command": "sudo dive vita2hos",
+            "type": "shell",
+            "args": [],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Tag Docker Image (with DKP)",
+            "command": "sudo docker tag vita2hos-docker ghcr.io/tsrberry/vita2hos-docker:latest-dkp",
+            "type": "shell",
+            "args": [],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Push Docker Image (with DKP)",
+            "command": "sudo docker push ghcr.io/tsrberry/vita2hos-docker:latest-dkp",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
