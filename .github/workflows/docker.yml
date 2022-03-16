@@ -7,11 +7,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: vita2hos-dev
+  IMAGE_NAME: tsrberry/vita2hos-dev
 
 jobs:
   build_and_push:
-    name: Build and push Docker image to github packages
+    name: Build and push Docker image to Github Registry
     runs-on: ubuntu-latest
     permissions:
       contents: read
