@@ -289,7 +289,7 @@ RUN cd uam \
        build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
-FROM base
+FROM base AS final
 
 COPY --from=builder --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=builder --chown=vita2hos:vita2hos $VITASDK $VITASDK
