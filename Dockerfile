@@ -25,19 +25,41 @@ ARG TARGET=arm-none-eabi
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# ------- Information about apt packages --------
+# Mako:                 (python3, python3-pip, python3-setuptools)
+# // https://github.com/devkitPro/docker/blob/master/toolchain-base/Dockerfile doesn't look optimized
+# DKP-Pacman:           wget, pkg-config, git, make, cmake, xz-utils, gpg, bzip2
+# VPDM:                 cmake, patch, tar, curl, git, python
+# binutils:             (wget, tar, gzip), build-essential
+# // http://gcc.gnu.org/install/prerequisites.html
+# gcc:                  (wget), tar, gzip, patch, build-essential, libgmp-dev libmpfr-dev libmpc-dev
+# newlib:               (wget, tar, gzip, patch), build-essential
+# dkp_general-tools:    (git), autotools-dev, automake, autoconf, build-essential
+# dkARM_rules:          (wget, tar, gzip), build-essential
+# dkARM_crt0:           (wget, tar, gzip), build-essential
+# dkARM_gdb (py3):      (git), python3-dev, build-essential, texinfo
+# libnx (xerpi):        (git), devkitARM, build-essential
+# switch-tools (xerpi): (git), libnx, autotools-dev, automake, autoconf, build-essential, liblz4-dev, libelf-dev
+# dekotools:            (git), meson, ninja-build
+# deko3d (xerpi):       (git), dekotools, build-essential
+# SPIRV-Cross:          (git), cmake, build-essential
+# fmt:                  (git), cmake, build-essential
+# glslang:              (git), cmake, python3, (bison)
+# UAM (xerpi):          (git), meson, ninja-build
+
 # get all the required packages
 RUN apt update && apt upgrade -y
 RUN apt install -y \
-    make git-core cmake python3-dev build-essential bison flex \
-    libncurses5-dev libreadline-dev texinfo pkg-config \
-    libssl-dev gpg wget curl \
-    python3-pip python3-setuptools libglib2.0-dev libc6-dbg \
+    build-essential git-core cmake python3-dev bison flex \
+    pkg-config gpg wget curl \
+    python \
+    python3-pip python3-setuptools \
+    libgmp-dev libmpfr-dev libmpc-dev \
+    texinfo \
     autotools-dev automake autoconf liblz4-dev libelf-dev \
-    python2-dev libtinfo5 \
-    libgmp-dev libmpfr-dev libmpc-dev mesa-common-dev libfreeimage-dev \
-    zlib1g-dev libusb-dev libudev-dev libexpat1-dev \
-    xz-utils bzip2 python \
+    xz-utils bzip2 \
     meson ninja-build
+RUN apt clean -y
 
 # install Mako for UAM
 RUN python3 -m pip install Mako
@@ -92,12 +114,12 @@ RUN git clone https://github.com/vitasdk/vdpm \
     && cd vdpm && ./bootstrap-vitasdk.sh \
     && ./install-all.sh
 
-# download and build samples from vitasdk
-USER vita2hos
-WORKDIR /home/vita2hos/tools/vitasdk
-RUN git clone https://github.com/vitasdk/samples \
-    && cd samples && mkdir build && cd build \
-    && cmake .. && make -j $MAKE_JOBS
+# # download and build samples from vitasdk
+# USER vita2hos
+# WORKDIR /home/vita2hos/tools/vitasdk
+# RUN git clone https://github.com/vitasdk/samples \
+#     && cd samples && mkdir build && cd build \
+#     && cmake .. && make -j $MAKE_JOBS
 
 USER root
 WORKDIR /home/vita2hos/tools
