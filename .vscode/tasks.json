@@ -2,22 +2,8 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Docker Image (with DKP)",
+            "label": "Build Docker Image",
             "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .",
-            "type": "shell",
-            "args": [],
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "showReuseMessage": false,
-                "clear": true,
-                "focus": true
-            },
-            "group": "build"
-        },
-        {
-            "label": "Build Docker Image (without DKP)",
-            "command": "sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --build-arg INSTALL_DKP_PACKAGES=0 --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
@@ -44,8 +30,8 @@
             }
         },
         {
-            "label": "Tag Docker Image (with DKP)",
-            "command": "sudo docker tag vita2hos-docker ghcr.io/tsrberry/vita2hos-docker:latest-dkp",
+            "label": "Tag Docker Image",
+            "command": "sudo docker tag vita2hos-docker ghcr.io/tsrberry/vita2hos-docker:latest",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
@@ -58,8 +44,8 @@
             }
         },
         {
-            "label": "Push Docker Image (with DKP)",
-            "command": "sudo docker push ghcr.io/tsrberry/vita2hos-docker:latest-dkp",
+            "label": "Push Docker Image",
+            "command": "sudo docker push ghcr.io/tsrberry/vita2hos-docker",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
