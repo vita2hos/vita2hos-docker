@@ -50,7 +50,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update && apt upgrade -y
 RUN apt install -y \
     build-essential git-core cmake python3-dev bison flex \
-    pkg-config gpg wget curl \
+    pkg-config wget curl \
     python \
     python3-pip python3-setuptools \
     libgmp-dev libmpfr-dev libmpc-dev \
