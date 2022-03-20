@@ -231,8 +231,10 @@ RUN cd deko3d && make -f Makefile.32 install
 USER vita2hos
 WORKDIR /home/vita2hos/tools/portlibs
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
+    && cd SPIRV-Cross && git checkout tags/2020-05-19 -b 2020-05-19 && cd .. \
     && git clone https://github.com/fmtlib/fmt \
     && git clone https://github.com/KhronosGroup/glslang \
+    && cd glslang && git checkout tags/8.13.3743 -b 8.13.3743 && cd .. \
     && git clone https://github.com/xerpi/uam --branch switch-32
 
 # build and install SPIRV-Cross
