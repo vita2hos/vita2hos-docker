@@ -17,6 +17,7 @@ If you just want to build your project with it do this:
 ```bash
 sudo docker run --rm -it -v $pwd:/workdir ghcr.io/tsrberry/vita2hos-docker:<tag>
 # a new bash will be spawned
+cd /workdir
 make -j $(($(nproc) - 2))
 exit
 ```
