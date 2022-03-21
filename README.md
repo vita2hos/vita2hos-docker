@@ -12,7 +12,22 @@ Please read the following Github Docs:
 
 ## How to use the image
 
-If you just want to build your project with it do this:
+### VSCode - dev container
+
+1. Pull the dev container image: `ghcr.io/jeliebig/devcontainer/vita2hos`
+2. Create a `.devcontainer.json` in the root of your project and add the following content to it:
+
+    ```json
+    {
+      "image": "ghcr.io/jeliebig/devcontainer/vita2hos"
+    }
+    ```
+
+3. Now open your project in VSCode and you should be able to reopen the folder using the dev container!
+
+If you want to get more information about dev container have a look at [this](https://code.visualstudio.com/docs/remote/containers).
+
+### Build a project (without using a dev container)
 
 ```bash
 sudo docker run --rm -it -v $pwd:/workdir ghcr.io/jeliebig/vita2hos-docker:<tag>

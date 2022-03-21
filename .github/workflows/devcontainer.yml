@@ -1,0 +1,33 @@
+name: Generate Dev Container Image
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  push:
+    branches:
+      - 'master'
+permissions:
+  contents: read
+  packages: write
+jobs:
+  devcontainer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          set -e
+
+          FOLDER_WITH_DOT_DEVCONTAINER="."
+          IMAGE_NAME="devcontainer/vita2hos"
+          IMAGE_REPOSITORY="$(echo "ghcr.io/${{ github.repository_owner }}/${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')"
+
+          export DOCKER_BUILDKIT=1
+
+          # Login to Github Container Registry
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          # Do the build - update
+          npm install -g "@vscode/dev-container-cli"
+          devcontainer build --no-cache --image-name "${IMAGE_REPOSITORY}" "${FOLDER_WITH_DOT_DEVCONTAINER}"
+
+          # Push image to GitHub Container Registry
+          docker push "${IMAGE_REPOSITORY}"
