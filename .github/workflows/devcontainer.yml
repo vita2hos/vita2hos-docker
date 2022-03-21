@@ -2,9 +2,8 @@ name: Generate Dev Container Image
 on:
   schedule:
     - cron: '0 0 1 * *'
-  push:
-    branches:
-      - 'master'
+  registry_package:
+    types: [ updated ]
 permissions:
   contents: read
   packages: write
