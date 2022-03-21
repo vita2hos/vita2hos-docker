@@ -46,8 +46,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 # install all globally required packages
 RUN apt update && apt upgrade -y \
     && apt install -y \
-        build-essential git-core \
-        python3-minimal python3-pip python3-setuptools
+        build-essential git-core python3-minimal
 
 FROM base AS builder
 
@@ -75,6 +74,7 @@ FROM base AS builder
 
 # install all the required packages
 RUN apt install -y \
+        python3-pip python3-setuptools \
         cmake bison flex \
         pkg-config wget curl \
         sudo python \
