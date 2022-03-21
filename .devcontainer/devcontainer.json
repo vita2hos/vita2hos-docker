@@ -1,0 +1,8 @@
+{
+    "image": "ghcr.io/tsrberry/vita2hos-docker:latest",
+    "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "austin.code-gnu-global",
+        "jeff-hykin.better-cpp-syntax"
+    ]
+}
