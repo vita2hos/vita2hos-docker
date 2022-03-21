@@ -23,10 +23,7 @@ jobs:
           export DOCKER_BUILDKIT=1
 
           # Login to Github Container Registry
-          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          
-          # Pull vita2hos image
-          docker pull ghcr.io/tsrberry/vita2hos-docker:latest
+          echo "${{ secrets.ACTIONS_PAT }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
 
           # Do the build - update
           npm install -g "@vscode/dev-container-cli"
