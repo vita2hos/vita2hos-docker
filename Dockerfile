@@ -24,6 +24,33 @@ ARG TARGET=arm-none-eabi
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# add env vars for all users
+RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh \
+    && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
+
+# add a new user vita2hos
+RUN useradd -s /bin/bash -m vita2hos
+
+# copy latest dkp arm packages from DKP image
+COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
+
+# copy latest dkp aarch64 packages from DKP image
+COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}}
+
+# and add env vars for all users
+RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
+    && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
+    && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
+    && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
+
+# install all globally required packages
+RUN apt update && apt upgrade -y \
+    && apt install -y \
+        build-essential git-core \
+        python3-minimal python3-pip python3-setuptools
+
+FROM base AS builder
+
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
 # // https://github.com/devkitPro/docker/blob/master/toolchain-base/Dockerfile doesn't look optimized
@@ -44,49 +71,20 @@ ARG DEBIAN_FRONTEND=noninteractive
 # SPIRV-Cross:          (git), cmake, build-essential
 # fmt:                  (git), cmake, build-essential
 # glslang:              (git), cmake, python3, (bison)
-# UAM (xerpi):          (git), meson, ninja-build
+# UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
-# get all the required packages
-RUN apt update && apt upgrade -y
+# install all the required packages
 RUN apt install -y \
-    build-essential git-core cmake python3-dev bison flex \
-    pkg-config wget curl \
-    python \
-    python3-pip python3-setuptools \
-    libgmp-dev libmpfr-dev libmpc-dev \
-    texinfo \
-    autotools-dev automake autoconf liblz4-dev libelf-dev \
-    xz-utils bzip2 \
-    meson ninja-build
-RUN apt clean -y
-
-# install Mako for UAM
-RUN python3 -m pip install Mako
-
-# add env vars for all users
-RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh \
-    && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
-
-# add a new user vita2hos
-RUN useradd -s /bin/bash -m vita2hos
-
-# copy latest dkp arm packages from DKP image
-COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
-
-# copy latest dkp aarch64 packages from DKP image
-COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}}
-
-# and add env vars for all users
-RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
-    && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
-    && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
-    && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
-
-FROM base AS builder
-
-# Install sudo for vitasdk
-RUN apt install -y sudo
-RUN apt clean -y
+        cmake bison flex \
+        pkg-config wget curl \
+        sudo python \
+        libgmp-dev libmpfr-dev libmpc-dev \
+        python3-dev texinfo \
+        autotools-dev automake autoconf liblz4-dev libelf-dev \
+        xz-utils bzip2 \
+        meson ninja-build \
+    && apt clean -y \
+    && python3 -m pip install Mako
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -289,4 +287,3 @@ COPY --from=builder --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos
-ENTRYPOINT [ "/bin/bash" ]
