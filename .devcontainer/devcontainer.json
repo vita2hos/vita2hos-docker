@@ -3,6 +3,8 @@
     "extensions": [
         "ms-vscode.cpptools-extension-pack",
         "austin.code-gnu-global",
-        "jeff-hykin.better-cpp-syntax"
+        "jeff-hykin.better-cpp-syntax",
+        "slevesque.shader",
+        "VisualStudioExptTeam.vscodeintellicode"
     ]
 }
