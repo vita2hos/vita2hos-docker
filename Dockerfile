@@ -190,7 +190,7 @@ RUN rm -rf $DEVKITARM/$TARGET/sys-include
 # Clone and install devkitARM gdb with python3 support
 RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
     && cd binutils-gdb \
-    && ./configure --with-python=/usr/bin/python3 --prefix=/opt/devkitpro/devkitARM --target=arm-none-eabi \
+    && ./configure --with-python=/usr/bin/python3 --prefix=$DEVKITARM --target=arm-none-eabi \
     && make && make install
 
 # Clone private libnx fork and install it
@@ -271,12 +271,20 @@ RUN cd glslang \
     && make -j $MAKE_JOBS
 RUN cd glslang/build && make install
 
+# build and install uam as a host executable
+USER vita2hos
+RUN cd uam \
+    && meson \
+       --prefix $DEVKITPRO/tools \
+       build_host
+RUN cd uam/build_host && ninja -j $MAKE_JOBS install
+
 # build and install uam
 USER vita2hos
 RUN cd uam \
     && meson \
        --cross-file ../../xerpi_gist/cross_file_switch32.txt \
-       --prefix /opt/devkitpro/libnx32 \
+       --prefix $DEVKITPRO/libnx32 \
        build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
