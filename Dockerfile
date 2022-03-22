@@ -35,7 +35,7 @@ RUN useradd -s /bin/bash -m vita2hos
 COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
 
 # copy latest dkp aarch64 packages from DKP image
-COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}}
+COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
 
 # and add env vars for all users
 RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
