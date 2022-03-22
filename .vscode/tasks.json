@@ -31,7 +31,7 @@
         },
         {
             "label": "Tag Docker Image",
-            "command": "sudo docker tag vita2hos-docker ghcr.io/tsrberry/vita2hos-dev:latest",
+            "command": "sudo docker tag vita2hos-dev ghcr.io/tsrberry/vita2hos-dev:latest",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
