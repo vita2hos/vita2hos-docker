@@ -30,7 +30,7 @@ If you want to get more information about dev container have a look at [this](ht
 ### Build a project (without using a dev container)
 
 ```bash
-sudo docker run --rm -it -v $pwd:/workdir ghcr.io/tsrberry/vita2hos-docker:<tag>
+sudo docker run --rm -it -v $pwd:/workdir ghcr.io/tsrberry/vita2hos-dev:<tag>
 # a new bash will be spawned
 cd /workdir
 make -j $(($(nproc) - 2))
@@ -47,8 +47,8 @@ exit
 
 2. Create the secret file `secret/xerpi_gist.txt` and write the URL of the gist to it
 
-3. Run this command to build the image and add the tag `vita2hos-docker` to it
+3. Run this command to build the image and add the tag `vita2hos-dev` to it
 
     ```bash
-    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-docker .
+    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .
     ```
