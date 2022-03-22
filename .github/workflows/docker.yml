@@ -3,6 +3,10 @@ name: Docker Image CI
 on:
   push:
     branches: [ master ]
+    paths:
+      - "!.devcontainer/**"
+      - "!.vscode/**"
+      - "!*.md"
   workflow_dispatch: {}
 
 env:
