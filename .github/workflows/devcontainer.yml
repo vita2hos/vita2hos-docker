@@ -4,6 +4,11 @@ on:
     - cron: '0 0 1 * *'
   registry_package:
     types: [ updated ]
+  push:
+    branches: [ master ]
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer.yml"
 permissions:
   contents: read
   packages: write
@@ -23,7 +28,7 @@ jobs:
 
           # Login to Github Container Registry
           echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          
+
           # Pull vita2hos image
           docker pull ghcr.io/tsrberry/vita2hos-docker:latest
 
