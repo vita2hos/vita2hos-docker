@@ -46,7 +46,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 # install all globally required packages
 RUN apt update && apt upgrade -y \
     && apt install -y \
-        build-essential git-core python3-minimal
+        build-essential git-core python3-dev
 
 FROM base AS builder
 
@@ -79,7 +79,7 @@ RUN apt install -y \
         pkg-config wget curl \
         sudo python \
         libgmp-dev libmpfr-dev libmpc-dev \
-        python3-dev texinfo \
+        texinfo \
         autotools-dev automake autoconf liblz4-dev libelf-dev \
         xz-utils bzip2 \
         meson ninja-build \
