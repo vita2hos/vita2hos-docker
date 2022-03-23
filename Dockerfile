@@ -46,7 +46,8 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 # install all globally required packages
 RUN apt update && apt upgrade -y \
     && apt install -y \
-        build-essential git-core python3-dev
+        build-essential git-core python3-dev \
+    && apt clean -y
 
 FROM base AS builder
 
