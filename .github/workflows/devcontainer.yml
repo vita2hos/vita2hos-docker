@@ -47,7 +47,7 @@ jobs:
 
           # Do the build - update
           npm install -g "@vscode/dev-container-cli"
-          devcontainer build --no-cache --image-name "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "${FOLDER_WITH_DOT_DEVCONTAINER}"
+          devcontainer build --image-name "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "${FOLDER_WITH_DOT_DEVCONTAINER}"
 
           # Push image to GitHub Container Registry
           docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
