@@ -87,6 +87,9 @@ RUN apt install -y \
     && apt clean -y \
     && python3 -m pip install Mako
 
+# Create symlink for python2
+RUN ln -s /usr/bin/python2 /usr/bin/python
+
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
