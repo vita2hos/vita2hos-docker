@@ -78,7 +78,7 @@ RUN apt install -y \
         python3-pip python3-setuptools \
         cmake bison flex \
         pkg-config wget curl \
-        sudo python \
+        sudo python2-minimal \
         libgmp-dev libmpfr-dev libmpc-dev \
         texinfo \
         autotools-dev automake autoconf liblz4-dev libelf-dev \
