@@ -8,6 +8,10 @@ on:
       - "!.vscode/**"
       - "!*.md"
   workflow_dispatch: {}
+  
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -17,9 +21,6 @@ jobs:
   build_and_push:
     name: Build and push Docker image to Github Registry
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v2
