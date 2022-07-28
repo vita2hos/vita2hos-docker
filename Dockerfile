@@ -14,13 +14,16 @@ ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 ENV VITASDK=/usr/local/vitasdk
 ENV PATH=${VITASDK}/bin:${PATH}
 
-ARG DKARM_RULES_VER=1.2.1
-ARG DKARM_CRTLS_VER=1.1.1
 ARG GCC_VER=12.1.0
 ARG BINUTILS_VER=2.38
 ARG NEWLIB_VER=4.2.0.20211231
 
 ARG TARGET=arm-none-eabi
+
+# Use labels to make images easier to organize
+LABEL gcc.version="${GCC_VER}"
+LABEL binutils.version="${BINUTILS_VER}"
+LABEL newlib.version="${NEWLIB_VER}"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -49,7 +52,7 @@ RUN apt update && apt upgrade -y \
         build-essential git-core python3-dev \
     && apt clean -y
 
-FROM base AS builder
+FROM base AS prepare
 
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
@@ -73,7 +76,7 @@ FROM base AS builder
 # glslang:              (git), cmake, python3, (bison)
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
-# install all the required packages
+# install all the required packages and create symlink for python2
 RUN apt install -y \
         python3-pip python3-setuptools \
         cmake bison flex \
@@ -85,10 +88,8 @@ RUN apt install -y \
         xz-utils bzip2 \
         meson ninja-build \
     && apt clean -y \
-    && python3 -m pip install Mako
-
-# Create symlink for python2
-RUN ln -s /usr/bin/python2 /usr/bin/python
+    && python3 -m pip install Mako \
+    && ln -s /usr/bin/python2 /usr/bin/python
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -125,6 +126,8 @@ RUN wget https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VER/gcc-$GCC_VER.tar.gz \
     && tar -zxvf binutils-$BINUTILS_VER.tar.gz \
     && tar -zxvf newlib-$NEWLIB_VER.tar.gz
 
+FROM prepare AS binutils-build
+
 # build and install binutils
 RUN mkdir binutils-build && cd binutils-build \
     && ../binutils-$BINUTILS_VER/configure \
@@ -133,7 +136,12 @@ RUN mkdir binutils-build && cd binutils-build \
         --disable-nls --disable-werror \
         --enable-lto --enable-plugins --enable-poison-system-directories \
     && make -j $MAKE_JOBS all 2>&1 | tee ./binutils-build-logs.log
+
+FROM binutils-build AS binutils-install
+
 RUN cd binutils-build && make install
+
+FROM binutils-install AS gcc-build
 
 # patch, build and install gcc
 USER vita2hos
@@ -165,7 +173,12 @@ RUN cd gcc-$GCC_VER \
        --disable-__cxa_atexit \
        --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 57 (mod for Switch aarch32)" \
     && make -j $MAKE_JOBS all-gcc 2>&1 | tee ./gcc-build-withoutnewlib-logs.log
+
+FROM gcc-build AS gcc-install
+
 RUN cd gcc-build && make install-gcc
+
+FROM gcc-install AS newlib-build
 
 # patch, build and install newlib
 USER vita2hos
@@ -180,13 +193,23 @@ RUN cd newlib-$NEWLIB_VER \
        --enable-newlib-mb \
        --disable-newlib-wide-orient \
     && make -j $MAKE_JOBS all 2>&1 | tee ./newlib-build-logs.log
+
+FROM newlib-build AS newlib-install
+
 RUN cd newlib-build && make install
+
+FROM newlib-install AS gcc-stage2-build
 
 # build and install gcc stage 2 (with newlib)
 USER vita2hos
 RUN cd gcc-build \
     && make -j $MAKE_JOBS all 2>&1 | tee ./gcc-build-withnewlib-logs.log
+
+FROM gcc-stage2-build AS gcc-stage2-install
+
 RUN cd gcc-build && make install
+
+FROM gcc-stage2-install AS dkp-gdb
 
 # remove sys-include dir in devkitARM/arm-none-eabi
 RUN rm -rf $DEVKITARM/$TARGET/sys-include
@@ -197,6 +220,8 @@ RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
     && ./configure --with-python=/usr/bin/python3 --prefix=$DEVKITARM --target=arm-none-eabi \
     && make && make install
 
+FROM dkp-gdb AS libnx
+
 # Clone private libnx fork and install it
 USER root
 WORKDIR /home/vita2hos/tools
@@ -204,6 +229,8 @@ RUN --mount=type=ssh git clone git@github.com:xerpi/libnx && chown vita2hos:vita
 USER vita2hos
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32
 RUN cd libnx && make -C nx/ -f Makefile.32 install
+
+FROM libnx AS switch-tools
 
 # Clone switch-tools fork and install it
 USER root
@@ -214,6 +241,8 @@ RUN cd switch-tools && ./autogen.sh \
     && make -j $MAKE_JOBS
 RUN cd switch-tools && make install
 
+FROM switch-tools AS dekotools
+
 # Clone and install dekotools
 USER vita2hos
 RUN git clone https://github.com/fincs/dekotools
@@ -222,12 +251,16 @@ RUN cd dekotools \
 USER root
 RUN cd dekotools/build && ninja install -j $MAKE_JOBS
 
+FROM dekotools AS deko3d
+
 # Clone private deko3d fork and install it
 USER root
 RUN --mount=type=ssh git clone git@github.com:xerpi/deko3d && chown vita2hos:vita2hos -R deko3d
 USER vita2hos
 RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS
 RUN cd deko3d && make -f Makefile.32 install
+
+FROM deko3d AS portlibs-prepare
 
 # prepare portlibs
 USER vita2hos
@@ -238,6 +271,8 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && git clone https://github.com/KhronosGroup/glslang \
     && cd glslang && git checkout tags/8.13.3743 -b 8.13.3743 && cd .. \
     && git clone https://github.com/xerpi/uam --branch switch-32
+
+FROM portlibs-prepare AS spirv
 
 # build and install SPIRV-Cross
 RUN cd SPIRV-Cross \
@@ -252,6 +287,8 @@ RUN cd SPIRV-Cross \
     && make -j $MAKE_JOBS
 RUN cd SPIRV-Cross/build && make install
 
+FROM spirv AS fmt
+
 # build and install fmt
 USER vita2hos
 RUN cd fmt \
@@ -261,6 +298,8 @@ RUN cd fmt \
        -DFMT_TEST:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd fmt/build && make install
+
+FROM fmt as glslang
 
 # build and install glslang
 USER vita2hos
@@ -274,6 +313,8 @@ RUN cd glslang \
        -DENABLE_SPVREMAPPER:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd glslang/build && make install
+
+FROM glslang AS uam
 
 # build and install uam as a host executable
 USER vita2hos
@@ -294,8 +335,8 @@ RUN cd uam/build && ninja -j $MAKE_JOBS install
 
 FROM base AS final
 
-COPY --from=builder --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=builder --chown=vita2hos:vita2hos $VITASDK $VITASDK
+COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=uam --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos
