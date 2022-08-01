@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - directory: "/"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependency-update"
+      - "gh-actions"
+    package-ecosystem: "github-actions"
+    rebase-strategy: auto
+    schedule:
+      interval: "daily"
+      timezone: "Europe/Berlin"
+    reviewers:
+      - "TSRBerry"
+    commit-message:
+      prefix: "dep gha"
