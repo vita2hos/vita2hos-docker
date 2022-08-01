@@ -2,13 +2,13 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     paths:
       - "!.devcontainer/**"
       - "!.vscode/**"
       - "!*.md"
   workflow_dispatch: {}
-  
+
 permissions:
   contents: read
   packages: write
@@ -48,6 +48,7 @@ jobs:
         uses: docker/metadata-action@v4.0.1
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: latest
 
       - name: Start SSH-Agent
         uses: webfactory/ssh-agent@v0.5.4
@@ -64,7 +65,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           push: true
-          tags: latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           ssh: |
             default=${{ env.SSH_AUTH_SOCK }}
