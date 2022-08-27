@@ -30,12 +30,19 @@ If you want to get more information about dev container have a look at [this](ht
 ### Build a project (without using a dev container)
 
 ```bash
-sudo docker run --rm -it -v $pwd:/workdir ghcr.io/tsrberry/vita2hos-dev:<tag>
+sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/tsrberry/vita2hos-dev:<tag>
 # a new bash will be spawned
-cd /workdir
+cd /vita2hos
 make -j $(($(nproc) - 2))
 exit
 ```
+
+Or as a one-liner:
+
+```bash
+sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/tsrberry/vita2hos-dev:<tag> bash -c "cd /vita2hos ; make -j $(($(nproc) - 2))"
+```
+
 
 ## How to build the image
 
