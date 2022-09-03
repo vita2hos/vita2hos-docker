@@ -1,10 +1,13 @@
 {
-    "image": "ghcr.io/tsrberry/vita2hos-dev:latest",
-    "extensions": [
-        "ms-vscode.cpptools-extension-pack",
-        "austin.code-gnu-global",
-        "jeff-hykin.better-cpp-syntax",
-        "slevesque.shader",
-        "VisualStudioExptTeam.vscodeintellicode"
-    ]
+  "image": "ghcr.io/tsrberry/vita2hos-dev:latest",
+  "remoteUser": "root",
+  "containerUser": "root",
+  "extensions": [
+	"ms-vscode.cpptools-extension-pack",
+	"jeff-hykin.better-cpp-syntax",
+	"slevesque.shader",
+	"VisualStudioExptTeam.vscodeintellicode",
+	"stevensona.shader-toy",
+	"josetr.cmake-language-support-vscode"
+  ]
 }
