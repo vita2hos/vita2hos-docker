@@ -50,6 +50,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 RUN apt update && apt upgrade -y \
     && apt install -y \
         build-essential git-core python3-dev \
+        curl netcat \
     && apt clean -y
 
 FROM base AS prepare
