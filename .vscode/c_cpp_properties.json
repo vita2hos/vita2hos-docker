@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "DKP-arm",
+            "intelliSenseMode": "linux-gcc-arm",
+            "compilerPath": "/opt/devkitpro/devkitARM/bin/arm-none-eabi-gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++20",
+            "includePath": [
+                "/opt/devkitpro/libnx32/include/**",
+                "/opt/devkitpro/portlibs/switch/include/**",
+                "/opt/devkitpro/devkitARM/include/**",
+                "/opt/devkitpro/devkitARM/arm-none-eabi/include/**",
+                "/usr/local/vitasdk/include/**",
+                "/usr/local/vitasdk/arm-vita-eabi/include/**",
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/Vita3K/vita3k/**"
+            ]
+        }
+    ],
+    "version": 4
+}
