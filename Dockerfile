@@ -50,7 +50,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 RUN apt update && apt upgrade -y \
     && apt install -y \
         build-essential git-core python3-dev \
-        curl netcat \
+        curl netcat-openbsd \
     && apt clean -y
 
 FROM base AS prepare
@@ -219,14 +219,14 @@ RUN rm -rf $DEVKITARM/$TARGET/sys-include
 RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
     && cd binutils-gdb \
     && ./configure --with-python=/usr/bin/python3 --prefix=$DEVKITARM --target=arm-none-eabi \
-    && make && make install
+    && make -j $MAKE_JOBS && make install
 
 FROM dkp-gdb AS libnx
 
 # Clone private libnx fork and install it
 USER root
 WORKDIR /home/vita2hos/tools
-RUN --mount=type=ssh git clone git@github.com:xerpi/libnx && chown vita2hos:vita2hos -R libnx
+RUN --mount=type=ssh git clone git@github.com:xerpi/libnx -b 15_0_rebase && chown vita2hos:vita2hos -R libnx
 USER vita2hos
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32
 RUN cd libnx && make -C nx/ -f Makefile.32 install
