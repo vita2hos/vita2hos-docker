@@ -270,7 +270,7 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout e9cc6403341baf0edd430a4027b074d0a06b782f && cd .. \
     && git clone https://github.com/fmtlib/fmt \
     && git clone https://github.com/KhronosGroup/glslang \
-    && cd glslang && git checkout tags/11.0.0 -b 11.0.0 && cd .. \
+    && cd glslang && git checkout tags/12.0.0 -b 12.0.0 && cd .. \
     && git clone https://github.com/xerpi/uam --branch switch-32
 
 FROM portlibs-prepare AS spirv
