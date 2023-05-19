@@ -89,7 +89,10 @@ RUN apt install -y \
         xz-utils bzip2 \
         meson ninja-build \
     && apt clean -y \
+    && python3 -m pipx ensurepath \
     && python3 -m pipx install Mako
+
+ENV PATH=/root/.local/bin:${PATH}
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
