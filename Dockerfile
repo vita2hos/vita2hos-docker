@@ -79,18 +79,17 @@ FROM base AS prepare
 
 # install all the required packages and create symlink for python2
 RUN apt install -y \
-        python3-pip python3-setuptools \
+        python3-pip pipx python3-setuptools \
         cmake bison flex \
         pkg-config wget curl \
-        sudo python2-minimal \
+        sudo \
         libgmp-dev libmpfr-dev libmpc-dev \
         texinfo \
         autotools-dev automake autoconf liblz4-dev libelf-dev \
         xz-utils bzip2 \
         meson ninja-build \
     && apt clean -y \
-    && python3 -m pip install Mako \
-    && ln -s /usr/bin/python2 /usr/bin/python
+    && python3 -m pipx install Mako
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
