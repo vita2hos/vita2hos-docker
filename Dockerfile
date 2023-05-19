@@ -1,4 +1,4 @@
-FROM ubuntu:rolling AS base
+FROM archlinux:base-devel AS base
 
 # NOTE: Make sure secret id=xerpi_gist,src=secret/xerpi_gist.txt is defined
 
@@ -47,11 +47,9 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
 # install all globally required packages
-RUN apt update && apt upgrade -y \
-    && apt install -y \
-        build-essential git-core python3-dev \
-        curl netcat-openbsd \
-    && apt clean -y
+RUN pacman -Syu --noconfirm \
+    git curl base-devel openbsd-netcat python \
+    && pacman -Scc --noconfirm
 
 FROM base AS prepare
 
@@ -77,22 +75,20 @@ FROM base AS prepare
 # glslang:              (git), cmake, python3, (bison)
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
-# install all the required packages and create symlink for python2
-RUN apt install -y \
-        python3-pip pipx python3-setuptools \
+# install all the required packages
+RUN pacman -S --noconfirm \
+        openssh \
+        python-pip python-setuptools \
         cmake bison flex \
-        pkg-config wget curl \
-        sudo \
-        libgmp-dev libmpfr-dev libmpc-dev \
+        pkgconf wget curl \
+        sudo binutils \
+        libmpc \
         texinfo \
-        autotools-dev automake autoconf liblz4-dev libelf-dev \
-        xz-utils bzip2 \
-        meson ninja-build \
-    && apt clean -y \
-    && python3 -m pipx ensurepath \
-    && python3 -m pipx install Mako
-
-ENV PATH=/root/.local/bin:${PATH}
+        libtool automake autoconf lz4 libelf \
+        xz bzip2 \
+        meson ninja \
+        python-mako \
+    && pacman -Scc --noconfirm
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
