@@ -14,9 +14,9 @@ ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 ENV VITASDK=/usr/local/vitasdk
 ENV PATH=${VITASDK}/bin:${PATH}
 
-ARG GCC_VER=11.2.0
-ARG BINUTILS_VER=2.38
-ARG NEWLIB_VER=4.2.0.20211231
+ARG GCC_VER=13.1.0
+ARG BINUTILS_VER=2.40
+ARG NEWLIB_VER=4.3.0.20230120
 
 ARG TARGET=arm-none-eabi
 
@@ -79,18 +79,17 @@ FROM base AS prepare
 
 # install all the required packages and create symlink for python2
 RUN apt install -y \
-        python3-pip python3-setuptools \
+        python3-pip pipx python3-setuptools \
         cmake bison flex \
         pkg-config wget curl \
-        sudo python2-minimal \
+        sudo \
         libgmp-dev libmpfr-dev libmpc-dev \
         texinfo \
         autotools-dev automake autoconf liblz4-dev libelf-dev \
         xz-utils bzip2 \
         meson ninja-build \
     && apt clean -y \
-    && python3 -m pip install Mako \
-    && ln -s /usr/bin/python2 /usr/bin/python
+    && python3 -m pipx install Mako
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
@@ -147,7 +146,7 @@ FROM binutils-install AS gcc-build
 # patch, build and install gcc
 USER vita2hos
 RUN cd gcc-$GCC_VER \
-    && patch -p1 < ../../xerpi_gist/gcc-11.2.0.patch \
+    && patch -p1 < ../../xerpi_gist/gcc-${GCC_VER}.patch \
     && cd .. && mkdir gcc-build && cd gcc-build \
     && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
        CXXFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
@@ -172,7 +171,7 @@ RUN cd gcc-$GCC_VER \
        --with-system-zlib \
        --disable-tm-clone-registry \
        --disable-__cxa_atexit \
-       --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 57 (mod for Switch aarch32)" \
+       --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 61 (mod for Switch aarch32)" \
     && make -j $MAKE_JOBS all-gcc 2>&1 | tee ./gcc-build-withoutnewlib-logs.log
 
 FROM gcc-build AS gcc-install
@@ -183,8 +182,9 @@ FROM gcc-install AS newlib-build
 
 # patch, build and install newlib
 USER vita2hos
-RUN cd newlib-$NEWLIB_VER \
-    && patch -p1 < ../../xerpi_gist/newlib-4.2.0.20211231.patch \
+RUN git clone https://github.com/devkitPro/buildscripts \
+    && cd newlib-$NEWLIB_VER \
+    && patch -p1 < ../buildscripts/dkarm-eabi/patches/newlib-${NEWLIB_VER}.patch \
     && cd .. && mkdir newlib-build && cd newlib-build \
     && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
        ../newlib-$NEWLIB_VER/configure \
@@ -226,7 +226,7 @@ FROM dkp-gdb AS libnx
 # Clone private libnx fork and install it
 USER root
 WORKDIR /home/vita2hos/tools
-RUN --mount=type=ssh git clone git@github.com:xerpi/libnx -b 15_0_rebase && chown vita2hos:vita2hos -R libnx
+RUN --mount=type=ssh git clone git@github.com:xerpi/libnx && chown vita2hos:vita2hos -R libnx
 USER vita2hos
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32
 RUN cd libnx && make -C nx/ -f Makefile.32 install
