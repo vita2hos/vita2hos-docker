@@ -13,6 +13,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-image-master
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: tsrberry/vita2hos-dev
