@@ -270,7 +270,8 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && git clone https://github.com/fmtlib/fmt \
     && git clone https://github.com/KhronosGroup/glslang \
     && cd glslang && git checkout tags/12.0.0 -b 12.0.0 && cd .. \
-    && git clone https://github.com/xerpi/uam --branch switch-32
+    && git clone https://github.com/xerpi/uam --branch switch-32 \
+    && git clone https://github.com/richgel999/miniz.git
 
 FROM portlibs-prepare AS spirv
 
@@ -333,6 +334,17 @@ RUN cd uam \
        build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
+FROM uam as miniz
+
+# build and install glslang
+USER vita2hos
+RUN cd miniz \
+    && mkdir build && cd build \
+    && cmake .. \
+       -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    && make -j $MAKE_JOBS
+RUN cd miniz/build && make install
+
 FROM base AS final
 
 COPY --from=prepare --chown=vita2hos:vita2hos $VITASDK $VITASDK
@@ -353,6 +365,7 @@ COPY --from=fmt --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 USER vita2hos
 WORKDIR /home/vita2hos
