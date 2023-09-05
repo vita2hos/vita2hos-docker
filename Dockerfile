@@ -209,10 +209,10 @@ FROM gcc-stage2-build AS gcc-stage2-install
 
 RUN cd gcc-build && make install
 
-FROM gcc-stage2-install AS dkp-gdb
-
 # remove sys-include dir in devkitARM/arm-none-eabi
 RUN rm -rf $DEVKITARM/$TARGET/sys-include
+
+FROM gcc-stage2-install AS dkp-gdb
 
 # Clone and install devkitARM gdb with python3 support
 RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
@@ -335,8 +335,24 @@ RUN cd uam/build && ninja -j $MAKE_JOBS install
 
 FROM base AS final
 
+COPY --from=prepare --chown=vita2hos:vita2hos $VITASDK $VITASDK
+
+COPY --from=binutils-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=newlib-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=gcc-stage2-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=dkp-gdb --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+COPY --from=libnx --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=switch-tools --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+COPY --from=dekotools --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=deko3d --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+COPY --from=spirv --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=fmt --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=uam --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos
