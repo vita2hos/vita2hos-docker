@@ -1,5 +1,5 @@
 {
-  "image": "ghcr.io/tsrberry/vita2hos-dev:latest",
+  "image": "ghcr.io/vita2hos/vita2hos-dev:latest",
   "remoteUser": "root",
   "containerUser": "root",
   "customizations": {
@@ -13,6 +13,5 @@
         "josetr.cmake-language-support-vscode"
       ]
     }
-  },
-  
+  }
 }

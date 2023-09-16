@@ -16,7 +16,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: tsrberry/devcontainer/vita2hos
+  IMAGE_NAME: vita2hos/devcontainer/vita2hos
 
 jobs:
   devcontainer:

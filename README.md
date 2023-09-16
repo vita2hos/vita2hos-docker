@@ -14,12 +14,12 @@ Please read the following Github Docs:
 
 ### VSCode - dev container
 
-1. Pull the dev container image: `ghcr.io/tsrberry/devcontainer/vita2hos`
+1. Pull the dev container image: `ghcr.io/vita2hos/devcontainer/vita2hos`
 2. Create a `.devcontainer.json` in the root of your project and add the following content to it:
 
     ```json
     {
-      "image": "ghcr.io/tsrberry/devcontainer/vita2hos"
+      "image": "ghcr.io/vita2hos/devcontainer/vita2hos"
     }
     ```
 
@@ -30,7 +30,7 @@ If you want to get more information about dev container have a look at [this](ht
 ### Build a project (without using a dev container)
 
 ```bash
-sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/tsrberry/vita2hos-dev:<tag>
+sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/vita2hos/vita2hos-dev:<tag>
 # a new bash will be spawned
 cd /vita2hos
 make -j $(($(nproc) - 2))
@@ -40,9 +40,8 @@ exit
 Or as a one-liner:
 
 ```bash
-sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/tsrberry/vita2hos-dev:<tag> bash -c "cd /vita2hos ; make -j $(($(nproc) - 2))"
+sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/vita2hos/vita2hos-dev:<tag> bash -c "cd /vita2hos ; make -j $(($(nproc) - 2))"
 ```
-
 
 ## How to build the image
 

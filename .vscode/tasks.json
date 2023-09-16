@@ -36,7 +36,7 @@
         },
         {
             "label": "Tag Docker Image",
-            "command": "docker tag vita2hos-dev ghcr.io/tsrberry/vita2hos-dev:latest",
+            "command": "docker tag vita2hos-dev ghcr.io/vita2hos/vita2hos-dev:latest",
             "type": "shell",
             "args": [],
             "problemMatcher": [],
@@ -50,7 +50,7 @@
         },
         {
             "label": "Push Docker Image",
-            "command": "docker push ghcr.io/tsrberry/vita2hos-dev",
+            "command": "docker push ghcr.io/vita2hos/vita2hos-dev",
             "type": "shell",
             "args": [],
             "problemMatcher": [],

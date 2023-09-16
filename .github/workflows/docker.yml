@@ -19,7 +19,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: tsrberry/vita2hos-dev
+  IMAGE_NAME: vita2hos/vita2hos-dev
 
 jobs:
   build_and_push:
