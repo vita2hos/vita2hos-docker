@@ -18,6 +18,11 @@ ARG GCC_VER=13.2.0
 ARG BINUTILS_VER=2.41
 ARG NEWLIB_VER=4.3.0.20230120
 
+ARG SPIRV_CROSS_VER=sdk-1.3.261.1
+ARG FMTLIB_VER=10.1.1
+ARG GLSLANG_VER=sdk-1.3.261.1
+ARG MINIZ_VER=3.0.2
+
 ARG TARGET=arm-none-eabi
 
 # Use labels to make images easier to organize
@@ -266,12 +271,13 @@ FROM deko3d AS portlibs-prepare
 USER vita2hos
 WORKDIR /home/vita2hos/tools/portlibs
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
-    && cd SPIRV-Cross && git checkout 4e2fdb25671c742a9fbe93a6034eb1542244c7e1 && cd .. \
+    && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
+    && cd fmt && git checkout tags/${FMTLIB_VER} -b ${FMTLIB_VER} && cd .. \
     && git clone https://github.com/KhronosGroup/glslang \
-    && cd glslang && git checkout tags/12.0.0 -b 12.0.0 && cd .. \
+    && cd glslang && git checkout tags/${GLSLANG_VER} -b ${GLSLANG_VER} && cd .. \
     && git clone https://github.com/xerpi/uam --branch switch-32 \
-    && git clone https://github.com/richgel999/miniz.git
+    && git clone https://github.com/richgel999/miniz.git --branch ${MINIZ_VER}
 
 FROM portlibs-prepare AS spirv
 
