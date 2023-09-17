@@ -203,6 +203,9 @@ FROM newlib-build AS newlib-install
 
 RUN cd newlib-build && make install
 
+# remove sys-include dir in devkitARM/arm-none-eabi
+RUN rm -rf $DEVKITARM/$TARGET/sys-include
+
 FROM newlib-install AS gcc-stage2-build
 
 # build and install gcc stage 2 (with newlib)
@@ -213,9 +216,6 @@ RUN cd gcc-build \
 FROM gcc-stage2-build AS gcc-stage2-install
 
 RUN cd gcc-build && make install
-
-# remove sys-include dir in devkitARM/arm-none-eabi
-RUN rm -rf $DEVKITARM/$TARGET/sys-include
 
 FROM gcc-stage2-install AS dkp-gdb
 
