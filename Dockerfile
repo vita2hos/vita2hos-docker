@@ -53,7 +53,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
 
 # install all globally required packages
 RUN pacman -Syu --noconfirm \
-    git curl base-devel openbsd-netcat python \
+    git curl base-devel openbsd-netcat python cmake \
     && pacman -Scc --noconfirm
 
 FROM base AS prepare
@@ -82,17 +82,17 @@ FROM base AS prepare
 
 # install all the required packages
 RUN pacman -S --noconfirm \
-        openssh \
-        python-pip python-setuptools \
-        cmake bison flex \
-        pkgconf wget curl \
-        sudo binutils \
-        libmpc \
-        texinfo \
-        libtool automake autoconf lz4 libelf \
-        xz bzip2 \
-        meson ninja \
-        python-mako \
+    openssh \
+    python-pip python-setuptools \
+    bison flex \
+    pkgconf wget curl \
+    sudo binutils \
+    libmpc \
+    texinfo \
+    libtool automake autoconf lz4 libelf \
+    xz bzip2 \
+    meson ninja \
+    python-mako \
     && pacman -Scc --noconfirm
 
 # Download public key for github.com
@@ -135,10 +135,10 @@ FROM prepare AS binutils-build
 # build and install binutils
 RUN mkdir binutils-build && cd binutils-build \
     && ../binutils-$BINUTILS_VER/configure \
-        --prefix=$DEVKITARM \
-        --target=$TARGET \
-        --disable-nls --disable-werror \
-        --enable-lto --enable-plugins --enable-poison-system-directories \
+    --prefix=$DEVKITARM \
+    --target=$TARGET \
+    --disable-nls --disable-werror \
+    --enable-lto --enable-plugins --enable-poison-system-directories \
     && make -j $MAKE_JOBS all 2>&1 | tee ./binutils-build-logs.log
 
 FROM binutils-build AS binutils-install
@@ -153,29 +153,29 @@ RUN cd gcc-$GCC_VER \
     && patch -p1 < ../../xerpi_gist/gcc-${GCC_VER}.patch \
     && cd .. && mkdir gcc-build && cd gcc-build \
     && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-       CXXFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-       LDFLAGS_FOR_TARGET="" \
-       ../gcc-$GCC_VER/configure \
-       --target=$TARGET \
-       --prefix=$DEVKITARM \
-       --enable-languages=c,c++,objc,lto \
-       --with-gnu-as --with-gnu-ld --with-gcc \
-       --enable-cxx-flags='-ffunction-sections' \
-       --disable-libstdcxx-verbose \
-       --enable-poison-system-directories \
-       --enable-interwork --enable-multilib \
-       --enable-threads --disable-win32-registry --disable-nls --disable-debug \
-       --disable-libmudflap --disable-libssp --disable-libgomp \
-       --disable-libstdcxx-pch \
-       --enable-libstdcxx-time=yes \
-       --enable-libstdcxx-filesystem-ts \
-       --with-newlib \
-       --with-headers=../newlib-$NEWLIB_VER/newlib/libc/include \
-       --enable-lto \
-       --with-system-zlib \
-       --disable-tm-clone-registry \
-       --disable-__cxa_atexit \
-       --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 61 (mod for Switch aarch32)" \
+    CXXFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
+    LDFLAGS_FOR_TARGET="" \
+    ../gcc-$GCC_VER/configure \
+    --target=$TARGET \
+    --prefix=$DEVKITARM \
+    --enable-languages=c,c++,objc,lto \
+    --with-gnu-as --with-gnu-ld --with-gcc \
+    --enable-cxx-flags='-ffunction-sections' \
+    --disable-libstdcxx-verbose \
+    --enable-poison-system-directories \
+    --enable-interwork --enable-multilib \
+    --enable-threads --disable-win32-registry --disable-nls --disable-debug \
+    --disable-libmudflap --disable-libssp --disable-libgomp \
+    --disable-libstdcxx-pch \
+    --enable-libstdcxx-time=yes \
+    --enable-libstdcxx-filesystem-ts \
+    --with-newlib \
+    --with-headers=../newlib-$NEWLIB_VER/newlib/libc/include \
+    --enable-lto \
+    --with-system-zlib \
+    --disable-tm-clone-registry \
+    --disable-__cxa_atexit \
+    --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 61 (mod for Switch aarch32)" \
     && make -j $MAKE_JOBS all-gcc 2>&1 | tee ./gcc-build-withoutnewlib-logs.log
 
 FROM gcc-build AS gcc-install
@@ -191,20 +191,17 @@ RUN git clone https://github.com/devkitPro/buildscripts \
     && patch -p1 < ../buildscripts/dkarm-eabi/patches/newlib-${NEWLIB_VER}.patch \
     && cd .. && mkdir newlib-build && cd newlib-build \
     && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-       ../newlib-$NEWLIB_VER/configure \
-       --target=$TARGET \
-       --prefix=$DEVKITARM \
-       --disable-newlib-supplied-syscalls \
-       --enable-newlib-mb \
-       --disable-newlib-wide-orient \
+    ../newlib-$NEWLIB_VER/configure \
+    --target=$TARGET \
+    --prefix=$DEVKITARM \
+    --disable-newlib-supplied-syscalls \
+    --enable-newlib-mb \
+    --disable-newlib-wide-orient \
     && make -j $MAKE_JOBS all 2>&1 | tee ./newlib-build-logs.log
 
 FROM newlib-build AS newlib-install
 
 RUN cd newlib-build && make install
-
-# remove sys-include dir in devkitARM/arm-none-eabi
-RUN rm -rf $DEVKITARM/$TARGET/sys-include
 
 FROM newlib-install AS gcc-stage2-build
 
@@ -285,12 +282,12 @@ FROM portlibs-prepare AS spirv
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
-       -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
-       -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
-       -DSPIRV_CROSS_ENABLE_HLSL:BOOL=OFF \
-       -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
-       -DSPIRV_CROSS_FORCE_PIC:BOOL=ON \
-       -DSPIRV_CROSS_CLI:BOOL=OFF \
+    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
+    -DSPIRV_CROSS_ENABLE_HLSL:BOOL=OFF \
+    -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
+    -DSPIRV_CROSS_FORCE_PIC:BOOL=ON \
+    -DSPIRV_CROSS_CLI:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd SPIRV-Cross/build && make install
 
@@ -301,8 +298,8 @@ USER vita2hos
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
-       -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
-       -DFMT_TEST:BOOL=OFF \
+    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DFMT_TEST:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd fmt/build && make install
 
@@ -313,11 +310,11 @@ USER vita2hos
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
-       -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
-       -DENABLE_HLSL:BOOL=OFF \
-       -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
-       -DENABLE_CTEST:BOOL=OFF \
-       -DENABLE_SPVREMAPPER:BOOL=OFF \
+    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DENABLE_HLSL:BOOL=OFF \
+    -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
+    -DENABLE_CTEST:BOOL=OFF \
+    -DENABLE_SPVREMAPPER:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd glslang/build && make install
 
@@ -327,17 +324,17 @@ FROM glslang AS uam
 USER vita2hos
 RUN cd uam \
     && meson \
-       --prefix $DEVKITPRO/tools \
-       build_host
+    --prefix $DEVKITPRO/tools \
+    build_host
 RUN cd uam/build_host && ninja -j $MAKE_JOBS install
 
 # build and install uam
 USER vita2hos
 RUN cd uam \
     && meson \
-       --cross-file ../../xerpi_gist/cross_file_switch32.txt \
-       --prefix $DEVKITPRO/libnx32 \
-       build
+    --cross-file ../../xerpi_gist/cross_file_switch32.txt \
+    --prefix $DEVKITPRO/libnx32 \
+    build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
 FROM uam as miniz
@@ -347,7 +344,7 @@ USER vita2hos
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
-       -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
     && make -j $MAKE_JOBS
 RUN cd miniz/build && make install
 
@@ -372,6 +369,9 @@ COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+# remove sys-include dir in devkitARM/arm-none-eabi
+RUN rm -rf $DEVKITARM/$TARGET/sys-include
 
 USER vita2hos
 WORKDIR /home/vita2hos
