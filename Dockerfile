@@ -222,6 +222,9 @@ RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
     && ./configure --with-python=/usr/bin/python3 --prefix=$DEVKITARM --target=arm-none-eabi \
     && make -j $MAKE_JOBS && make install
 
+# remove sys-include dir in devkitARM/arm-none-eabi
+RUN rm -rf $DEVKITARM/$TARGET/sys-include
+
 FROM dkp-gdb AS libnx
 
 # Clone private libnx fork and install it
