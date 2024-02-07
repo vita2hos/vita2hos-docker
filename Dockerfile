@@ -139,7 +139,7 @@ RUN mkdir binutils-build && cd binutils-build \
     --target=$TARGET \
     --disable-nls --disable-werror \
     --enable-lto --enable-plugins --enable-poison-system-directories \
-    && make -j $MAKE_JOBS all 2>&1 | tee ./binutils-build-logs.log
+    && make -j $MAKE_JOBS all
 
 FROM binutils-build AS binutils-install
 
@@ -176,7 +176,7 @@ RUN cd gcc-$GCC_VER \
     --disable-tm-clone-registry \
     --disable-__cxa_atexit \
     --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 61 (mod for Switch aarch32)" \
-    && make -j $MAKE_JOBS all-gcc 2>&1 | tee ./gcc-build-withoutnewlib-logs.log
+    && make -j $MAKE_JOBS all-gcc
 
 FROM gcc-build AS gcc-install
 
@@ -197,7 +197,7 @@ RUN git clone https://github.com/devkitPro/buildscripts \
     --disable-newlib-supplied-syscalls \
     --enable-newlib-mb \
     --disable-newlib-wide-orient \
-    && make -j $MAKE_JOBS all 2>&1 | tee ./newlib-build-logs.log
+    && make -j $MAKE_JOBS all
 
 FROM newlib-build AS newlib-install
 
@@ -208,7 +208,7 @@ FROM newlib-install AS gcc-stage2-build
 # build and install gcc stage 2 (with newlib)
 USER vita2hos
 RUN cd gcc-build \
-    && make -j $MAKE_JOBS all 2>&1 | tee ./gcc-build-withnewlib-logs.log
+    && make -j $MAKE_JOBS all
 
 FROM gcc-stage2-build AS gcc-stage2-install
 
