@@ -16,7 +16,7 @@ ENV PATH=${VITASDK}/bin:${PATH}
 
 ARG GCC_VER=13.2.0
 ARG BINUTILS_VER=2.41
-ARG NEWLIB_VER=4.3.0.20230120
+ARG NEWLIB_VER=4.4.0.20231231
 
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
 ARG FMTLIB_VER=10.1.1
@@ -175,7 +175,7 @@ RUN cd gcc-$GCC_VER \
     --with-system-zlib \
     --disable-tm-clone-registry \
     --disable-__cxa_atexit \
-    --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 61 (mod for Switch aarch32)" \
+    --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 63 (mod for Switch aarch32)" \
     && make -j $MAKE_JOBS all-gcc
 
 FROM gcc-build AS gcc-install
