@@ -61,7 +61,7 @@ jobs:
           ssh-private-key: ${{ secrets.XERPI_DEPLOY_KEY }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5.1.0
+        uses: docker/build-push-action@v5.2.0
         with:
           context: .
           platforms: linux/amd64
