@@ -214,12 +214,6 @@ RUN cd gcc-build && make install
 
 FROM gcc-stage2-install AS dkp-gdb
 
-# Clone and install devkitARM gdb with python3 support
-RUN git clone https://github.com/devkitPro/binutils-gdb -b devkitARM-gdb \
-    && cd binutils-gdb \
-    && ./configure --with-python=/usr/bin/python3 --prefix=$DEVKITARM --target=arm-none-eabi \
-    && make -j $MAKE_JOBS && make install
-
 # remove sys-include dir in devkitARM/arm-none-eabi
 RUN rm -rf $DEVKITARM/$TARGET/sys-include
 
