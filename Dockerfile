@@ -112,6 +112,9 @@ WORKDIR /home/vita2hos/tools/toolchain
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH}
 
+# Create devkitpro dir
+RUN mkdir -p -m 0755 ${DEVKITPRO}
+
 FROM prepare AS buildscripts-run
 
 # run buildscripts to install GCC and binutils (1 = devkitARM)
