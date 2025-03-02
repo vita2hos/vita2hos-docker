@@ -1,7 +1,5 @@
 FROM archlinux:base-devel AS base
 
-# NOTE: Make sure secret id=xerpi_gist,src=secret/xerpi_gist.txt is defined
-
 ARG MAKE_JOBS=1
 
 # prepare devkitpro env
@@ -117,7 +115,7 @@ RUN git clone https://github.com/vitasdk/vdpm \
 
 USER root
 WORKDIR /home/vita2hos/tools
-RUN --mount=type=secret,id=xerpi_gist git clone $(cat /run/secrets/xerpi_gist) xerpi_gist \
+RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist \
     && chown vita2hos:vita2hos -R xerpi_gist
 
 # prepare binutils, gcc and newlib

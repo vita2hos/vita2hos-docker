@@ -45,16 +45,8 @@ sudo docker run --rm -it -v $(pwd):/vita2hos ghcr.io/vita2hos/vita2hos-dev:<tag>
 
 ## How to build the image
 
-1. Add your github ssh key to your ssh-agent
+1. Run this command to build the image and add the tag `vita2hos-dev` to it
 
     ```bash
-    ssh-add <path-to-your-key>
-    ```
-
-2. Create the secret file `secret/xerpi_gist.txt` and write the URL of the gist to it
-
-3. Run this command to build the image and add the tag `vita2hos-dev` to it
-
-    ```bash
-    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .
+    sudo DOCKER_BUILDKIT=1 docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .
     ```

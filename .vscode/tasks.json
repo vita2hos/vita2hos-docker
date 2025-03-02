@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "Build Docker Image",
-      "command": "docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) --secret id=xerpi_gist,src=secret/xerpi_gist.txt -t vita2hos-dev .",
+      "command": "docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .",
       "type": "shell",
       "args": [],
       "options": {
