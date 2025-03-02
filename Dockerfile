@@ -113,6 +113,7 @@ RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH}
 
 # Create devkitpro dir
+USER root
 RUN mkdir -p -m 0755 ${DEVKITPRO}
 
 FROM prepare AS buildscripts-run
