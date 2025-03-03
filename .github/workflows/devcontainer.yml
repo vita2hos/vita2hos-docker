@@ -51,23 +51,17 @@ jobs:
           echo "Detected $CORE_COUNT CPU cores"
           echo "cores=$CORE_COUNT" >> $GITHUB_OUTPUT
 
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
       - name: Build and push dev container image
         run: |
-          set -e
-
-          FOLDER_WITH_DOT_DEVCONTAINER="."
-          export DOCKER_BUILDKIT=1
-
-          # Install devcontainer CLI
-          npm install -g "@vscode/dev-container-cli"
-
-          # Build with MAKE_JOBS and GHA cache
           devcontainer build \
             --image-name "${{ steps.meta.outputs.tags }}" \
-            --build-arg "MAKE_JOBS=${{ steps.cpu_info.outputs.cores }}" \
             --cache-from "type=gha" \
             --cache-to "type=gha,mode=max" \
-            "${FOLDER_WITH_DOT_DEVCONTAINER}"
+            --push \
+            --workspace-folder .
 
-          # Push to GitHub Container Registry
-          docker push "${{ steps.meta.outputs.tags }}"
+        env:
+          DOCKER_BUILDKIT: 1
