@@ -60,7 +60,7 @@ jobs:
           echo "cores=$CORE_COUNT" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6.4.1
+        uses: docker/build-push-action@v6.15.0
         with:
           context: .
           platforms: linux/amd64
