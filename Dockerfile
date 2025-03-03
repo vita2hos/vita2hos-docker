@@ -9,8 +9,11 @@ ENV DEVKITPPC=/opt/devkitpro/devkitPPC
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 
 # prepare vitasdk env
-ENV VITASDK=/usr/local/vitasdk
+ENV VITASDK=/opt/vitasdk
 ENV PATH=${VITASDK}/bin:${PATH}
+
+# perl pod2man
+ENV PATH=/usr/bin/core_perl:${PATH}
 
 ARG BUILDSCRIPTS_HASH=1776e27341664059aa28ce1b148a1fd6c855e121
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
@@ -24,7 +27,7 @@ LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 ARG DEBIAN_FRONTEND=noninteractive
 
 # add env vars for all users
-RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh \
+RUN echo "export VITASDK=$VITASDK" > /etc/profile.d/10-vitasdk-env.sh \
     && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
 
 # add a new user vita2hos
@@ -66,7 +69,7 @@ FROM base AS prepare
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
 # install all the required packages
-RUN pacman -S --noconfirm \
+RUN pacman -Syu --noconfirm \
     openssh \
     python-pip python-setuptools \
     bison flex \
@@ -88,11 +91,28 @@ RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 RUN mkdir -p /home/vita2hos/tools/vitasdk && mkdir -p /home/vita2hos/tools/toolchain \
     && chown vita2hos:vita2hos -R /home/vita2hos
 
-# install vitasdk package manager
+# Create devkitpro dir
+USER root
+RUN mkdir -p -m 0755 ${DEVKITPRO}
+
+# Create vitasdk dir
+USER root
+RUN mkdir -p -m 0755 ${VITASDK}
+
+USER root
+WORKDIR /home/vita2hos/tools
+RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist \
+    && chown vita2hos:vita2hos -R xerpi_gist
+
+# download buildscripts
+USER vita2hos
+WORKDIR /home/vita2hos/tools/toolchain
+RUN git clone https://github.com/xerpi/buildscripts.git \
+    && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH}
+
+# download vitasdk package manager
 WORKDIR /home/vita2hos/tools/vitasdk
-RUN git clone https://github.com/vitasdk/vdpm \
-    && cd vdpm && ./bootstrap-vitasdk.sh \
-    && ./install-all.sh
+RUN git clone https://github.com/vitasdk/vdpm
 
 # # download and build samples from vitasdk
 # USER vita2hos
@@ -101,24 +121,9 @@ RUN git clone https://github.com/vitasdk/vdpm \
 #     && cd samples && mkdir build && cd build \
 #     && cmake .. && make -j $MAKE_JOBS
 
-USER root
-WORKDIR /home/vita2hos/tools
-RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist \
-    && chown vita2hos:vita2hos -R xerpi_gist
-
-# prepare buildscripts
-USER vita2hos
-WORKDIR /home/vita2hos/tools/toolchain
-RUN git clone https://github.com/xerpi/buildscripts.git \
-    && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH}
-
-# Create devkitpro dir
-USER root
-RUN mkdir -p -m 0755 ${DEVKITPRO}
-
 FROM prepare AS buildscripts-run
 
-# run buildscripts to install GCC and binutils (1 = devkitARM)
+# run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
 RUN cd buildscripts \
     && MAKEFLAGS='-j ${MAKE_JOBS}' BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
@@ -203,7 +208,7 @@ RUN cd fmt \
     && make -j $MAKE_JOBS
 RUN cd fmt/build && make install
 
-FROM fmt as glslang
+FROM fmt AS glslang
 
 # build and install glslang
 USER vita2hos
@@ -237,7 +242,7 @@ RUN cd uam \
     build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
-FROM uam as miniz
+FROM uam AS miniz
 
 # build and install glslang
 USER vita2hos
@@ -248,9 +253,12 @@ RUN cd miniz \
     && make -j $MAKE_JOBS
 RUN cd miniz/build && make install
 
-FROM base AS final
+FROM miniz AS vitasdk
 
-COPY --from=prepare --chown=vita2hos:vita2hos $VITASDK $VITASDK
+# install vitasdk
+RUN cd vdpm && ./bootstrap-vitasdk.sh && ./install-all.sh
+
+FROM base AS final
 
 COPY --from=buildscripts-run --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
@@ -266,6 +274,8 @@ COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+COPY --from=vitasdk --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos
