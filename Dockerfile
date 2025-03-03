@@ -39,6 +39,14 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
+# Create devkitpro dir
+USER root
+RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R vita2hos:vita2hos ${DEVKITPRO}
+
+# Copy devkitPro cmake files from the official docker images
+COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
+COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
+
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
 # // https://github.com/devkitPro/docker/blob/master/toolchain-base/Dockerfile doesn't look optimized
@@ -77,10 +85,6 @@ FROM base AS prepare
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-# Create devkitpro dir
-USER root
-RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R root:vita2hos ${DEVKITPRO}
 
 RUN ls -la /home
 
@@ -219,7 +223,7 @@ FROM prepare AS vitasdk
 USER root
 RUN git clone https://github.com/vitasdk/vdpm && chown vita2hos:vita2hos -R vdpm \
     && cd vdpm && ./bootstrap-vitasdk.sh && ./install-all.sh \
-    && chown -R root:vita2hos ${VITASDK}
+    && chown -R vita2hos:vita2hos ${VITASDK}
 
 FROM base AS final
 
