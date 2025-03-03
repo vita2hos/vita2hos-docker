@@ -96,7 +96,6 @@ FROM prepare AS buildscripts
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
-    && set -x && export SHELLOPTS \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
 FROM buildscripts AS general-tools
