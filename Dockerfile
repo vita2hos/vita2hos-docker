@@ -9,52 +9,35 @@ ENV DEVKITPPC=/opt/devkitpro/devkitPPC
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 
 # prepare vitasdk env
-ENV VITASDK=/usr/local/vitasdk
+ENV VITASDK=/opt/vitasdk
 ENV PATH=${VITASDK}/bin:${PATH}
 
-ARG GCC_VER=13.2.0
-ARG BINUTILS_VER=2.41
-ARG NEWLIB_VER=4.4.0.20231231
+# perl pod2man
+ENV PATH=/usr/bin/core_perl:${PATH}
 
+ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
 ARG FMTLIB_VER=10.1.1
 ARG GLSLANG_VER=sdk-1.3.261.1
 ARG MINIZ_VER=3.0.2
 
-ARG TARGET=arm-none-eabi
-
 # Use labels to make images easier to organize
-LABEL gcc.version="${GCC_VER}"
-LABEL binutils.version="${BINUTILS_VER}"
-LABEL newlib.version="${NEWLIB_VER}"
+LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# add env vars for all users
-RUN echo "export VITASDK=/usr/local/vitasdk" > /etc/profile.d/10-vitasdk-env.sh \
-    && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
-
-# add a new user vita2hos
+# Add a new user (and group) vita2hos
 RUN useradd -s /bin/bash -m vita2hos
 
-# copy latest dkp arm packages from DKP image
-COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
-
-# copy latest dkp aarch64 packages from DKP image
-COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO} ${DEVKITPRO}
+# add env vars for all users
+RUN echo "export VITASDK=$VITASDK" > /etc/profile.d/10-vitasdk-env.sh \
+    && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
 
 # and add env vars for all users
 RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
-
-# install all globally required packages
-RUN pacman -Syu --noconfirm \
-    git curl base-devel openbsd-netcat python cmake \
-    && pacman -Scc --noconfirm
-
-FROM base AS prepare
 
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
@@ -79,189 +62,82 @@ FROM base AS prepare
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
 # install all the required packages
-RUN pacman -S --noconfirm \
-    openssh \
-    python-pip python-setuptools \
-    bison flex \
-    pkgconf wget curl \
+RUN pacman -Syu --needed --noconfirm \
+    base-devel git cmake meson ninja \
     sudo binutils \
-    libmpc \
-    texinfo \
-    libtool automake autoconf lz4 libelf \
-    xz bzip2 \
-    meson ninja \
-    python-mako \
+    openbsd-netcat openssh \
+    pkgconf wget curl \
+    python python-pip python-setuptools python-mako \
+    perl \
+    bison flex texinfo \
+    libmpc libtool automake autoconf lz4 libelf xz bzip2 \
     && pacman -Scc --noconfirm
+
+FROM base AS prepare
 
 # Download public key for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-# add a build structure and fix permissions
-RUN mkdir -p /home/vita2hos/tools/vitasdk && mkdir -p /home/vita2hos/tools/toolchain \
-    && chown vita2hos:vita2hos -R /home/vita2hos
-
-# install vitasdk package manager
-WORKDIR /home/vita2hos/tools/vitasdk
-RUN git clone https://github.com/vitasdk/vdpm \
-    && cd vdpm && ./bootstrap-vitasdk.sh \
-    && ./install-all.sh
-
-# # download and build samples from vitasdk
-# USER vita2hos
-# WORKDIR /home/vita2hos/tools/vitasdk
-# RUN git clone https://github.com/vitasdk/samples \
-#     && cd samples && mkdir build && cd build \
-#     && cmake .. && make -j $MAKE_JOBS
-
+# Create devkitpro dir
 USER root
-WORKDIR /home/vita2hos/tools
-RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist \
-    && chown vita2hos:vita2hos -R xerpi_gist
+RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R root:vita2hos ${DEVKITPRO}
 
-# prepare binutils, gcc and newlib
+RUN ls -la /home
+
+# Switch to vita2hos user
 USER vita2hos
-WORKDIR /home/vita2hos/tools/toolchain
-RUN wget https://ftp.gnu.org/gnu/gcc/gcc-$GCC_VER/gcc-$GCC_VER.tar.gz \
-    && wget https://ftp.gnu.org/gnu/binutils/binutils-$BINUTILS_VER.tar.gz \
-    && wget ftp://sourceware.org/pub/newlib/newlib-$NEWLIB_VER.tar.gz \
-    && tar -zxvf gcc-$GCC_VER.tar.gz \
-    && tar -zxvf binutils-$BINUTILS_VER.tar.gz \
-    && tar -zxvf newlib-$NEWLIB_VER.tar.gz
+WORKDIR /home/vita2hos
 
-FROM prepare AS binutils-build
+# Download devkitARM Switch 32-bits gist
+RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist
 
-# build and install binutils
-RUN mkdir binutils-build && cd binutils-build \
-    && ../binutils-$BINUTILS_VER/configure \
-    --prefix=$DEVKITARM \
-    --target=$TARGET \
-    --disable-nls --disable-werror \
-    --enable-lto --enable-plugins --enable-poison-system-directories \
-    && make -j $MAKE_JOBS all
+FROM prepare AS buildscripts
 
-FROM binutils-build AS binutils-install
+# Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
+RUN git clone https://github.com/xerpi/buildscripts.git \
+    && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
+    && set -x && export SHELLOPTS \
+    && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
-RUN cd binutils-build && make install
+FROM buildscripts AS general-tools
 
-FROM binutils-install AS gcc-build
+# Clone devkitPro's general-tools and install it
+RUN git clone https://github.com/devkitPro/general-tools.git \
+    && cd general-tools \
+    && ./autogen.sh \
+    && ./configure --prefix=${DEVKITPRO}/tools \
+    && make -j $MAKE_JOBS install
 
-# patch, build and install gcc
-USER vita2hos
-RUN cd gcc-$GCC_VER \
-    && patch -p1 < ../../xerpi_gist/gcc-${GCC_VER}.patch \
-    && cd .. && mkdir gcc-build && cd gcc-build \
-    && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-    CXXFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-    LDFLAGS_FOR_TARGET="" \
-    ../gcc-$GCC_VER/configure \
-    --target=$TARGET \
-    --prefix=$DEVKITARM \
-    --enable-languages=c,c++,objc,lto \
-    --with-gnu-as --with-gnu-ld --with-gcc \
-    --enable-cxx-flags='-ffunction-sections' \
-    --disable-libstdcxx-verbose \
-    --enable-poison-system-directories \
-    --enable-interwork --enable-multilib \
-    --enable-threads --disable-win32-registry --disable-nls --disable-debug \
-    --disable-libmudflap --disable-libssp --disable-libgomp \
-    --disable-libstdcxx-pch \
-    --enable-libstdcxx-time=yes \
-    --enable-libstdcxx-filesystem-ts \
-    --with-newlib \
-    --with-headers=../newlib-$NEWLIB_VER/newlib/libc/include \
-    --enable-lto \
-    --with-system-zlib \
-    --disable-tm-clone-registry \
-    --disable-__cxa_atexit \
-    --with-bugurl="http://wiki.devkitpro.org/index.php/Bug_Reports" --with-pkgversion="devkitARM release 63 (mod for Switch aarch32)" \
-    && make -j $MAKE_JOBS all-gcc
-
-FROM gcc-build AS gcc-install
-
-RUN cd gcc-build && make install-gcc
-
-FROM gcc-install AS newlib-build
-
-# patch, build and install newlib
-USER vita2hos
-RUN git clone https://github.com/devkitPro/buildscripts \
-    && cd newlib-$NEWLIB_VER \
-    && patch -p1 < ../buildscripts/dkarm-eabi/patches/newlib-${NEWLIB_VER}.patch \
-    && cd .. && mkdir newlib-build && cd newlib-build \
-    && CFLAGS_FOR_TARGET="-O2 -ffunction-sections -fdata-sections -fPIC" \
-    ../newlib-$NEWLIB_VER/configure \
-    --target=$TARGET \
-    --prefix=$DEVKITARM \
-    --disable-newlib-supplied-syscalls \
-    --enable-newlib-mb \
-    --disable-newlib-wide-orient \
-    && make -j $MAKE_JOBS all
-
-FROM newlib-build AS newlib-install
-
-RUN cd newlib-build && make install
-
-FROM newlib-install AS gcc-stage2-build
-
-# build and install gcc stage 2 (with newlib)
-USER vita2hos
-RUN cd gcc-build \
-    && make -j $MAKE_JOBS all
-
-FROM gcc-stage2-build AS gcc-stage2-install
-
-RUN cd gcc-build && make install
-
-FROM gcc-stage2-install AS dkp-gdb
-
-# remove sys-include dir in devkitARM/arm-none-eabi
-RUN rm -rf $DEVKITARM/$TARGET/sys-include
-
-FROM dkp-gdb AS libnx
-
-# Clone private libnx fork and install it
-USER root
-WORKDIR /home/vita2hos/tools
-RUN --mount=type=ssh git clone git@github.com:xerpi/libnx && chown vita2hos:vita2hos -R libnx
-USER vita2hos
-RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32
-RUN cd libnx && make -C nx/ -f Makefile.32 install
-
-FROM libnx AS switch-tools
+FROM general-tools AS switch-tools
 
 # Clone switch-tools fork and install it
-USER root
-RUN --mount=type=ssh git clone git@github.com:xerpi/switch-tools --branch arm-32-bit-support && chown vita2hos:vita2hos -R switch-tools
-USER vita2hos
+RUN git clone https://github.com/xerpi/switch-tools.git --branch arm-32-bit-support
 RUN cd switch-tools && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools/ \
-    && make -j $MAKE_JOBS
-RUN cd switch-tools && make install
+    && make -j $MAKE_JOBS install
 
-FROM switch-tools AS dekotools
+FROM switch-tools AS libnx
+
+# Clone libnx fork and install it
+RUN git clone https://github.com/xerpi/libnx.git
+RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
+
+FROM libnx AS dekotools
 
 # Clone and install dekotools
-USER vita2hos
 RUN git clone https://github.com/fincs/dekotools
-RUN cd dekotools \
-    && meson build
-USER root
+RUN cd dekotools && meson build --prefix $DEVKITPRO/tools
 RUN cd dekotools/build && ninja install -j $MAKE_JOBS
 
 FROM dekotools AS deko3d
 
-# Clone private deko3d fork and install it
-USER root
-RUN --mount=type=ssh git clone git@github.com:xerpi/deko3d && chown vita2hos:vita2hos -R deko3d
-USER vita2hos
-RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS
-RUN cd deko3d && make -f Makefile.32 install
+# Clone deko3d fork and install it
+RUN git clone https://github.com/xerpi/deko3d.git
+RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS install
 
 FROM deko3d AS portlibs-prepare
 
 # prepare portlibs
-USER vita2hos
-WORKDIR /home/vita2hos/tools/portlibs
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
@@ -277,7 +153,7 @@ FROM portlibs-prepare AS spirv
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
     -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
     -DSPIRV_CROSS_ENABLE_HLSL:BOOL=OFF \
     -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
@@ -289,23 +165,21 @@ RUN cd SPIRV-Cross/build && make install
 FROM spirv AS fmt
 
 # build and install fmt
-USER vita2hos
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
     -DFMT_TEST:BOOL=OFF \
     && make -j $MAKE_JOBS
 RUN cd fmt/build && make install
 
-FROM fmt as glslang
+FROM fmt AS glslang
 
 # build and install glslang
-USER vita2hos
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
     -DENABLE_HLSL:BOOL=OFF \
     -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
     -DENABLE_CTEST:BOOL=OFF \
@@ -316,7 +190,6 @@ RUN cd glslang/build && make install
 FROM glslang AS uam
 
 # build and install uam as a host executable
-USER vita2hos
 RUN cd uam \
     && meson \
     --prefix $DEVKITPRO/tools \
@@ -324,33 +197,34 @@ RUN cd uam \
 RUN cd uam/build_host && ninja -j $MAKE_JOBS install
 
 # build and install uam
-USER vita2hos
 RUN cd uam \
     && meson \
-    --cross-file ../../xerpi_gist/cross_file_switch32.txt \
+    --cross-file ../xerpi_gist/cross_file_switch32.txt \
     --prefix $DEVKITPRO/libnx32 \
     build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
-FROM uam as miniz
+FROM uam AS miniz
 
 # build and install glslang
-USER vita2hos
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
     && make -j $MAKE_JOBS
 RUN cd miniz/build && make install
 
+FROM prepare AS vitasdk
+
+# Install vitasdk
+USER root
+RUN git clone https://github.com/vitasdk/vdpm && chown vita2hos:vita2hos -R vdpm \
+    && cd vdpm && ./bootstrap-vitasdk.sh && ./install-all.sh \
+    && chown -R root:vita2hos ${VITASDK}
+
 FROM base AS final
 
-COPY --from=prepare --chown=vita2hos:vita2hos $VITASDK $VITASDK
-
-COPY --from=binutils-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=newlib-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=gcc-stage2-install --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=dkp-gdb --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=buildscripts --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 COPY --from=libnx --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=switch-tools --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
@@ -365,8 +239,7 @@ COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
-# remove sys-include dir in devkitARM/arm-none-eabi
-RUN rm -rf $DEVKITARM/$TARGET/sys-include
+COPY --from=vitasdk --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos
