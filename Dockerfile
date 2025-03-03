@@ -8,10 +8,6 @@ ENV DEVKITARM=/opt/devkitpro/devkitARM
 ENV DEVKITPPC=/opt/devkitpro/devkitPPC
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 
-# prepare vitasdk env
-ENV VITASDK=/opt/vitasdk
-ENV PATH=${VITASDK}/bin:${PATH}
-
 # perl pod2man
 ENV PATH=/usr/bin/core_perl:${PATH}
 
@@ -29,11 +25,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Add a new user (and group) vita2hos
 RUN useradd -s /bin/bash -m vita2hos
 
-# add env vars for all users
-RUN echo "export VITASDK=$VITASDK" > /etc/profile.d/10-vitasdk-env.sh \
-    && echo "export PATH=$VITASDK/bin:$PATH" >> /etc/profile.d/10-vitasdk-env.sh
-
-# and add env vars for all users
+# Add environment variables
 RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
@@ -217,14 +209,6 @@ RUN cd miniz \
     && make -j $MAKE_JOBS
 RUN cd miniz/build && make install
 
-FROM prepare AS vitasdk
-
-# Install vitasdk
-USER root
-RUN git clone https://github.com/vitasdk/vdpm && chown vita2hos:vita2hos -R vdpm \
-    && cd vdpm && ./bootstrap-vitasdk.sh && ./install-all.sh \
-    && chown -R vita2hos:vita2hos ${VITASDK}
-
 FROM base AS final
 
 COPY --from=buildscripts --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
@@ -241,8 +225,6 @@ COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-COPY --from=vitasdk --chown=vita2hos:vita2hos $VITASDK $VITASDK
 
 USER vita2hos
 WORKDIR /home/vita2hos

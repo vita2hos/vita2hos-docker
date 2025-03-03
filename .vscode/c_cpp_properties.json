@@ -11,10 +11,7 @@
                 "/opt/devkitpro/portlibs/switch/include/**",
                 "/opt/devkitpro/devkitARM/include/**",
                 "/opt/devkitpro/devkitARM/arm-none-eabi/include/**",
-                "/usr/local/vitasdk/include/**",
-                "/usr/local/vitasdk/arm-vita-eabi/include/**",
                 "${workspaceFolder}/include/**",
-                "${workspaceFolder}/Vita3K/vita3k/**"
             ]
         }
     ],
