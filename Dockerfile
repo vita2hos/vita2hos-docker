@@ -11,6 +11,7 @@ ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 # perl pod2man
 ENV PATH=/usr/bin/core_perl:${PATH}
 
+ARG LIBNX32_HASH=78523d192baeae824a448fa15a776502ea96b3b6
 ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
 ARG FMTLIB_VER=10.1.1
@@ -18,6 +19,7 @@ ARG GLSLANG_VER=sdk-1.3.261.1
 ARG MINIZ_VER=3.0.2
 
 # Use labels to make images easier to organize
+LABEL libnx32.version="${LIBNX32_HASH}"
 LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -115,7 +117,8 @@ FROM switch-tools AS libnx
 
 # Clone libnx fork and install it
 RUN git clone https://github.com/xerpi/libnx.git
-RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
+RUN cd libnx && git checkout ${LIBNX32_HASH} \
+    && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
 
 FROM libnx AS dekotools
 
