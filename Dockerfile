@@ -11,17 +11,6 @@ ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 # perl pod2man
 ENV PATH=/usr/bin/core_perl:${PATH}
 
-ARG LIBNX32_HASH=78523d192baeae824a448fa15a776502ea96b3b6
-ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
-ARG SPIRV_CROSS_VER=sdk-1.3.261.1
-ARG FMTLIB_VER=10.1.1
-ARG GLSLANG_VER=sdk-1.3.261.1
-ARG MINIZ_VER=3.0.2
-
-# Use labels to make images easier to organize
-LABEL libnx32.version="${LIBNX32_HASH}"
-LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
-
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Add a new user (and group) vita2hos
@@ -92,6 +81,7 @@ RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi
 FROM prepare AS buildscripts
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
+ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
@@ -116,6 +106,7 @@ RUN cd switch-tools && ./autogen.sh \
 FROM switch-tools AS libnx
 
 # Clone libnx fork and install it
+ARG LIBNX32_HASH=78523d192baeae824a448fa15a776502ea96b3b6
 RUN git clone https://github.com/xerpi/libnx.git
 RUN cd libnx && git checkout ${LIBNX32_HASH} \
     && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
@@ -136,6 +127,10 @@ RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS install
 FROM deko3d AS portlibs-prepare
 
 # prepare portlibs
+ARG SPIRV_CROSS_VER=sdk-1.3.261.1
+ARG FMTLIB_VER=10.1.1
+ARG GLSLANG_VER=sdk-1.3.261.1
+ARG MINIZ_VER=3.0.2
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
