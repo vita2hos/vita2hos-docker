@@ -199,7 +199,7 @@ RUN cd uam/build && ninja -j $MAKE_JOBS install
 
 FROM uam AS miniz
 
-# build and install glslang
+# build and install miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
@@ -209,19 +209,7 @@ RUN cd miniz/build && make install
 
 FROM base AS final
 
-COPY --from=buildscripts --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-COPY --from=libnx --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=switch-tools --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-COPY --from=dekotools --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=deko3d --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-COPY --from=spirv --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=fmt --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-COPY --from=uam --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+# Copy the entire $DEVKITPRO directory from the last build stage
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 USER vita2hos
