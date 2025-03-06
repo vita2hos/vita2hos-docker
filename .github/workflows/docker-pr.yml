@@ -39,6 +39,7 @@ jobs:
         uses: docker/metadata-action@v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: latest
 
       - name: Start SSH-Agent
         uses: webfactory/ssh-agent@v0.9.0

@@ -1,13 +1,6 @@
 name: Generate Dev Container Image
 
 on:
-  schedule:
-    - cron: "0 0 1 * *"  # Monthly on the 1st at midnight UTC
-  push:
-    branches: [master]
-    paths:
-      - ".devcontainer/**"
-      - ".github/workflows/devcontainer.yml"
   workflow_call:
   workflow_dispatch:
 
@@ -45,25 +38,11 @@ jobs:
         uses: docker/metadata-action@v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: latest
 
-      - name: Determine number of processors
-        id: cpu_info
-        run: |
-          CORE_COUNT=$(nproc)
-          echo "Detected $CORE_COUNT CPU cores"
-          echo "cores=$CORE_COUNT" >> $GITHUB_OUTPUT
-
-      - name: Install devcontainer CLI
-        run: npm install -g @devcontainers/cli
-
-      - name: Build and push dev container image
-        run: |
-          devcontainer build \
-            --image-name "${{ steps.meta.outputs.tags }}" \
-            --cache-from "type=gha" \
-            --cache-to "type=gha,mode=max" \
-            --push \
-            --workspace-folder .
-
-        env:
-          DOCKER_BUILDKIT: 1
+      - name: Pre-build dev container image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          push: always
