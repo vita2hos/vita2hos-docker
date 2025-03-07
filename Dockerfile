@@ -209,8 +209,18 @@ RUN cd miniz/build && make install
 
 FROM base AS final
 
+# Set user password and add user to wheel group
+RUN echo 'root:root' | chpasswd \
+    && echo 'vita2hos:vita2hos' | chpasswd \
+    && usermod -aG wheel vita2hos \
+    && echo '%wheel ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
 # Copy the entire $DEVKITPRO directory from the last build stage
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+# Use labels to make images easier to organize
+LABEL libnx32.version="${LIBNX32_HASH}"
+LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 USER vita2hos
 WORKDIR /home/vita2hos
