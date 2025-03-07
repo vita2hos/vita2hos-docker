@@ -2,6 +2,18 @@ FROM archlinux:base-devel AS base
 
 ARG MAKE_JOBS=1
 
+# Versions
+ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
+ARG LIBNX32_HASH=78523d192baeae824a448fa15a776502ea96b3b6
+ARG SPIRV_CROSS_VER=sdk-1.3.261.1
+ARG FMTLIB_VER=10.1.1
+ARG GLSLANG_VER=sdk-1.3.261.1
+ARG MINIZ_VER=3.0.2
+
+# Use labels to make images easier to organize
+LABEL libnx32.version="${LIBNX32_HASH}"
+LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
+
 # prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
 ENV DEVKITARM=/opt/devkitpro/devkitARM
@@ -16,6 +28,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Add a new user (and group) vita2hos
 RUN useradd -s /bin/bash -m vita2hos
 
+# Set passwords and add user to wheel group
+RUN echo 'root:root' | chpasswd \
+    && echo 'vita2hos:vita2hos' | chpasswd \
+    && usermod -aG wheel vita2hos \
+    && echo '%wheel ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
 # Add environment variables
 RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
@@ -23,7 +41,6 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
 # Create devkitpro dir
-USER root
 RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R vita2hos:vita2hos ${DEVKITPRO}
 
 # Copy devkitPro cmake files from the official docker images
@@ -81,7 +98,6 @@ RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi
 FROM prepare AS buildscripts
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
-ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
@@ -106,7 +122,6 @@ RUN cd switch-tools && ./autogen.sh \
 FROM switch-tools AS libnx
 
 # Clone libnx fork and install it
-ARG LIBNX32_HASH=78523d192baeae824a448fa15a776502ea96b3b6
 RUN git clone https://github.com/xerpi/libnx.git
 RUN cd libnx && git checkout ${LIBNX32_HASH} \
     && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
@@ -127,10 +142,6 @@ RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS install
 FROM deko3d AS portlibs-prepare
 
 # prepare portlibs
-ARG SPIRV_CROSS_VER=sdk-1.3.261.1
-ARG FMTLIB_VER=10.1.1
-ARG GLSLANG_VER=sdk-1.3.261.1
-ARG MINIZ_VER=3.0.2
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
@@ -209,18 +220,8 @@ RUN cd miniz/build && make install
 
 FROM base AS final
 
-# Set user password and add user to wheel group
-RUN echo 'root:root' | chpasswd \
-    && echo 'vita2hos:vita2hos' | chpasswd \
-    && usermod -aG wheel vita2hos \
-    && echo '%wheel ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-
 # Copy the entire $DEVKITPRO directory from the last build stage
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-# Use labels to make images easier to organize
-LABEL libnx32.version="${LIBNX32_HASH}"
-LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 USER vita2hos
 WORKDIR /home/vita2hos
