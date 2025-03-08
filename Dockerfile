@@ -2,28 +2,15 @@ FROM archlinux:base-devel AS base
 
 ARG MAKE_JOBS=1
 
-# Versions
-ARG LIBNX32_HASH=208d50ca458321272b6f6924cff0eb54423ce6b9
-ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
-ARG SPIRV_CROSS_VER=sdk-1.3.261.1
-ARG FMTLIB_VER=10.1.1
-ARG GLSLANG_VER=sdk-1.3.261.1
-ARG MINIZ_VER=3.0.2
-
-# Use labels to make images easier to organize
-LABEL libnx32.version="${LIBNX32_HASH}"
-LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
-
 # prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
 ENV DEVKITARM=/opt/devkitpro/devkitARM
-ENV DEVKITPPC=/opt/devkitpro/devkitPPC
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 
 # Use Ninja as the default generator for CMake
 ENV CMAKE_GENERATOR=Ninja
 
-# perl pod2man
+# Perl pod2man
 ENV PATH=/usr/bin/core_perl:${PATH}
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -40,7 +27,6 @@ RUN echo 'root:root' | chpasswd \
 # Add environment variables
 RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export DEVKITARM=${DEVKITPRO}/devkitARM" >> /etc/profile.d/devkit-env.sh \
-    && echo "export DEVKITPPC=${DEVKITPRO}/devkitPPC" >> /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
 # Create devkitpro dir
@@ -72,7 +58,7 @@ COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${D
 # glslang:              (git), cmake, python3, (bison)
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
-# install all the required packages
+# Install all the required packages
 RUN pacman -Syu --needed --noconfirm \
     base-devel git cmake meson ninja \
     sudo binutils \
@@ -95,12 +81,10 @@ RUN ls -la /home
 USER vita2hos
 WORKDIR /home/vita2hos
 
-# Download devkitARM Switch 32-bits gist
-RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist
-
 FROM prepare AS buildscripts
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
+ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
@@ -125,6 +109,7 @@ RUN cd switch-tools && ./autogen.sh \
 FROM switch-tools AS libnx
 
 # Clone libnx fork and install it
+ARG LIBNX32_HASH=be0f3aade5d3a6fd67c70a8e16a1f7dc8ab2cd30
 RUN git clone https://github.com/xerpi/libnx.git
 RUN cd libnx && git checkout ${LIBNX32_HASH} \
     && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
@@ -144,7 +129,11 @@ RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS install
 
 FROM deko3d AS portlibs-prepare
 
-# prepare portlibs
+# Prepare portlibs
+ARG SPIRV_CROSS_VER=sdk-1.3.261.1
+ARG FMTLIB_VER=10.1.1
+ARG GLSLANG_VER=sdk-1.3.261.1
+ARG MINIZ_VER=3.0.2
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
@@ -154,9 +143,14 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && git clone https://github.com/xerpi/uam --branch switch-32 \
     && git clone https://github.com/richgel999/miniz.git --branch ${MINIZ_VER}
 
-FROM portlibs-prepare AS spirv
+FROM portlibs-prepare AS download_gist
 
-# build and install SPIRV-Cross
+# Download devkitARM Switch 32-bits gist
+RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist
+
+FROM download_gist AS spirv
+
+# Build and install SPIRV-Cross
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
@@ -170,7 +164,7 @@ RUN cd SPIRV-Cross \
 
 FROM spirv AS fmt
 
-# build and install fmt
+# Build and install fmt
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
@@ -180,7 +174,7 @@ RUN cd fmt \
 
 FROM fmt AS glslang
 
-# build and install glslang
+# Build and install glslang
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
@@ -193,14 +187,14 @@ RUN cd glslang \
 
 FROM glslang AS uam
 
-# build and install uam as a host executable
+# Build and install uam as a host executable
 RUN cd uam \
     && meson \
     --prefix $DEVKITPRO/tools \
     build_host
 RUN cd uam/build_host && ninja -j $MAKE_JOBS install
 
-# build and install uam
+# Build and install uam
 RUN cd uam \
     && meson \
     --cross-file ../xerpi_gist/cross_file_switch32.txt \
@@ -210,7 +204,7 @@ RUN cd uam/build && ninja -j $MAKE_JOBS install
 
 FROM uam AS miniz
 
-# build and install miniz
+# Build and install miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
@@ -221,6 +215,10 @@ FROM base AS final
 
 # Copy the entire $DEVKITPRO directory from the last build stage
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+
+# Use labels to make images easier to organize
+LABEL libnx32.version="${LIBNX32_HASH}"
+LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 USER vita2hos
 WORKDIR /home/vita2hos
