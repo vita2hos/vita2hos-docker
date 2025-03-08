@@ -1,0 +1,16 @@
+[constants]
+DEVKITPRO = '/opt/devkitpro'
+PREFIX = DEVKITPRO + '/devkitARM'
+compile_args = ['-march=armv8-a+crc+crypto', '-mtune=cortex-a57', '-mtp=soft', '-ftls-model=local-exec', '-fPIC', '-ffunction-sections', '-fdata-sections']
+
+[binaries]
+c = PREFIX + '/bin/arm-none-eabi-gcc'
+cpp = PREFIX + '/bin/arm-none-eabi-g++'
+ar = PREFIX + '/bin/arm-none-eabi-ar'
+strip = PREFIX + '/bin/arm-none-eabi-strip'
+
+[built-in options]
+c_args = compile_args
+cpp_args = compile_args
+c_link_args = ['-fPIE', '-specs=' + DEVKITPRO + '/libnx32/switch32.specs']
+cpp_link_args = ['-fPIE', '-specs=' + DEVKITPRO + '/libnx32/switch32.specs']

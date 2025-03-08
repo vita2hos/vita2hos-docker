@@ -143,18 +143,15 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && git clone https://github.com/xerpi/uam --branch switch-32 \
     && git clone https://github.com/richgel999/miniz.git --branch ${MINIZ_VER}
 
-FROM portlibs-prepare AS download_gist
-
-# Download devkitARM Switch 32-bits gist
-RUN git clone https://gist.github.com/82c7ca88861297d7fa57dc73a3ea576c.git xerpi_gist
-
-FROM download_gist AS spirv
+FROM portlibs-prepare AS spirv
 
 # Build and install SPIRV-Cross
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_BUILD_TYPE=Release \
     -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
     -DSPIRV_CROSS_ENABLE_HLSL:BOOL=OFF \
     -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
@@ -168,7 +165,9 @@ FROM spirv AS fmt
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_BUILD_TYPE=Release \
     -DFMT_TEST:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
@@ -178,14 +177,16 @@ FROM fmt AS glslang
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_HLSL:BOOL=OFF \
     -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
     -DENABLE_CTEST:BOOL=OFF \
     -DENABLE_SPVREMAPPER:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
-FROM glslang AS uam
+FROM glslang AS uam-host
 
 # Build and install uam as a host executable
 RUN cd uam \
@@ -194,21 +195,30 @@ RUN cd uam \
     build_host
 RUN cd uam/build_host && ninja -j $MAKE_JOBS install
 
+FROM uam-host AS uam-switch
+
+# Add meson cross file for uam
+COPY cross_file_switch32.txt cross_file_switch32.txt
+
 # Build and install uam
 RUN cd uam \
     && meson \
-    --cross-file ../xerpi_gist/cross_file_switch32.txt \
+    --cross-file ../cross_file_switch32.txt \
     --prefix $DEVKITPRO/libnx32 \
     build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
-FROM uam AS miniz
+FROM uam-switch AS miniz
 
 # Build and install miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_TESTS:BOOL=OFF \
+    -DBUILD_EXAMPLES:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM base AS final
