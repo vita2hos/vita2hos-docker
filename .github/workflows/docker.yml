@@ -24,7 +24,7 @@ env:
 jobs:
   build_and_push:
     name: Build and push Docker image to GitHub Registry
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
