@@ -20,6 +20,9 @@ ENV DEVKITARM=/opt/devkitpro/devkitARM
 ENV DEVKITPPC=/opt/devkitpro/devkitPPC
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
 
+# Use Ninja as the default generator for CMake
+ENV CMAKE_GENERATOR=Ninja
+
 # perl pod2man
 ENV PATH=/usr/bin/core_perl:${PATH}
 
@@ -163,8 +166,7 @@ RUN cd SPIRV-Cross \
     -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
     -DSPIRV_CROSS_FORCE_PIC:BOOL=ON \
     -DSPIRV_CROSS_CLI:BOOL=OFF \
-    && make -j $MAKE_JOBS
-RUN cd SPIRV-Cross/build && make install
+    && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM spirv AS fmt
 
@@ -174,8 +176,7 @@ RUN cd fmt \
     && cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
     -DFMT_TEST:BOOL=OFF \
-    && make -j $MAKE_JOBS
-RUN cd fmt/build && make install
+    && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM fmt AS glslang
 
@@ -188,8 +189,7 @@ RUN cd glslang \
     -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
     -DENABLE_CTEST:BOOL=OFF \
     -DENABLE_SPVREMAPPER:BOOL=OFF \
-    && make -j $MAKE_JOBS
-RUN cd glslang/build && make install
+    && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM glslang AS uam
 
@@ -215,8 +215,7 @@ RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=../../xerpi_gist/libnx32.toolchain.cmake \
-    && make -j $MAKE_JOBS
-RUN cd miniz/build && make install
+    && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM base AS final
 
