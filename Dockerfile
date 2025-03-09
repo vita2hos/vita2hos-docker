@@ -2,10 +2,13 @@ FROM archlinux:base-devel AS base
 
 ARG MAKE_JOBS=1
 
-# prepare devkitpro env
+# Prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
 ENV DEVKITARM=/opt/devkitpro/devkitARM
 ENV PATH=${DEVKITPRO}/tools/bin:${DEVKITARM}/bin:${PATH}
+
+# Overwrite libnx location (used by ${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake)
+ENV NX_ROOT=${DEVKITPRO}/libnx32
 
 # Use Ninja as the default generator for CMake
 ENV CMAKE_GENERATOR=Ninja
@@ -149,7 +152,7 @@ FROM portlibs-prepare AS spirv
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
     -DCMAKE_BUILD_TYPE=Release \
     -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
@@ -165,7 +168,7 @@ FROM spirv AS fmt
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
     -DCMAKE_BUILD_TYPE=Release \
     -DFMT_TEST:BOOL=OFF \
@@ -177,7 +180,7 @@ FROM fmt AS glslang
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_HLSL:BOOL=OFF \
@@ -214,7 +217,7 @@ FROM uam-switch AS miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS:BOOL=OFF \
