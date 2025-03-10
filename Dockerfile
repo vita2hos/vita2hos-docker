@@ -134,8 +134,10 @@ RUN cd dekotools/build && ninja install -j $MAKE_JOBS
 FROM dekotools AS deko3d
 
 # Clone deko3d fork and install it
+ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
 RUN git clone https://github.com/xerpi/deko3d.git
-RUN cd deko3d && make -f Makefile.32 -j $MAKE_JOBS install
+RUN cd deko3d && git checkout ${DEKO3D_HASH} \
+    && make -f Makefile.32 -j $MAKE_JOBS install
 
 FROM deko3d AS portlibs-prepare
 
