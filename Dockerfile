@@ -33,11 +33,7 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
 # Create devkitpro dir
-RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R vita2hos:vita2hos ${DEVKITPRO}
-
-# Copy devkitPro cmake files from the official docker images
-COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
-COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
+RUN mkdir -p -m 0755 ${DEVKITPRO}
 
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
@@ -61,10 +57,10 @@ COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${D
 # glslang:              (git), cmake, python3, (bison)
 # UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
 
-# Install all the required packages
+# Install all the required base packages
 RUN pacman -Syu --needed --noconfirm \
     base-devel git cmake meson ninja \
-    sudo binutils \
+    sudo binutils vim \
     openbsd-netcat openssh \
     pkgconf wget curl \
     python python-pip python-setuptools python-mako \
@@ -72,6 +68,26 @@ RUN pacman -Syu --needed --noconfirm \
     bison flex texinfo \
     libmpc libtool automake autoconf lz4 libelf xz bzip2 \
     && pacman -Scc --noconfirm
+
+# Add devkitPro pacman repository
+RUN echo "[dkp-libs]" >> /etc/pacman.conf && \
+    echo "Server = https://pkg.devkitpro.org/packages" >> /etc/pacman.conf && \
+    echo "[dkp-linux]" >> /etc/pacman.conf && \
+    echo "Server = https://pkg.devkitpro.org/packages/linux/\$arch/" >> /etc/pacman.conf
+
+# Import and sign the devkitPro GPG key, install devkitPro keyring package and populate the keyring
+RUN pacman-key --init && \
+    pacman-key --recv BC26F752D25B92CE272E0F44F7FD5492264BB9D0 --keyserver keyserver.ubuntu.com && \
+    pacman-key --lsign BC26F752D25B92CE272E0F44F7FD5492264BB9D0 && \
+    pacman -U --noconfirm https://pkg.devkitpro.org/devkitpro-keyring.pkg.tar.zst && \
+    pacman-key --populate devkitpro && \
+    pacman -Syu
+
+# Install devkitPro's general-tools and switch-cmake
+RUN pacman -Sy --noconfirm general-tools dkp-cmake-common-utils devkitarm-cmake switch-cmake
+
+# Change ownership of the devkitPro directory
+RUN chown -R vita2hos:vita2hos ${DEVKITPRO}
 
 FROM base AS prepare
 
@@ -92,16 +108,7 @@ RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
-FROM buildscripts AS general-tools
-
-# Clone devkitPro's general-tools and install it
-RUN git clone https://github.com/devkitPro/general-tools.git \
-    && cd general-tools \
-    && ./autogen.sh \
-    && ./configure --prefix=${DEVKITPRO}/tools \
-    && make -j $MAKE_JOBS install
-
-FROM general-tools AS switch-tools
+FROM buildscripts AS switch-tools
 
 # Clone switch-tools fork and install it
 RUN git clone https://github.com/xerpi/switch-tools.git --branch arm-32-bit-support
@@ -152,8 +159,10 @@ FROM portlibs-prepare AS spirv
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
-    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
+    -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
+    -DCMAKE_INSTALL_PREFIX=${NX_ROOT} \
     -DCMAKE_BUILD_TYPE=Release \
     -DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS:BOOL=ON \
     -DSPIRV_CROSS_ENABLE_HLSL:BOOL=OFF \
@@ -168,8 +177,10 @@ FROM spirv AS fmt
 RUN cd fmt \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
-    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
+    -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
+    -DCMAKE_INSTALL_PREFIX=${NX_ROOT} \
     -DCMAKE_BUILD_TYPE=Release \
     -DFMT_TEST:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
@@ -180,8 +191,10 @@ FROM fmt AS glslang
 RUN cd glslang \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
-    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
+    -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
+    -DCMAKE_INSTALL_PREFIX=${NX_ROOT} \
     -DCMAKE_BUILD_TYPE=Release \
     -DENABLE_HLSL:BOOL=OFF \
     -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
@@ -217,8 +230,10 @@ FROM uam-switch AS miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
-    -DCMAKE_INSTALL_PREFIX=${DEVKITPRO}/libnx32 \
+    -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
+    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
+    -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
+    -DCMAKE_INSTALL_PREFIX=${NX_ROOT} \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS:BOOL=OFF \
     -DBUILD_EXAMPLES:BOOL=OFF \
