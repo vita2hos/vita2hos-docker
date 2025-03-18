@@ -42,7 +42,7 @@ jobs:
           tags: latest
 
       - name: Start SSH-Agent
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.XERPI_DEPLOY_KEY }}
 
