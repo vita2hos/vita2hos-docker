@@ -15,6 +15,10 @@ ARG FMTLIB_VER=10.1.1
 ARG GLSLANG_VER=sdk-1.3.261.1
 ARG MINIZ_VER=3.0.2
 
+# Use labels to make images easier to organize
+LABEL libnx32.version="${LIBNX32_HASH}"
+LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
+
 # Prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
 ENV DEVKITARM=/opt/devkitpro/devkitARM
@@ -252,10 +256,6 @@ COPY --from=fmt --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=uam-host --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=uam-switch --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
-
-# Use labels to make images easier to organize
-LABEL libnx32.version="${LIBNX32_HASH}"
-LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
 
 USER vita2hos
 WORKDIR /home/vita2hos
