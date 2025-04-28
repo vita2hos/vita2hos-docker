@@ -65,7 +65,7 @@ COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${D
 # dkARM_rules:          (wget, tar, gzip), build-essential
 # dkARM_crt0:           (wget, tar, gzip), build-essential
 # dkARM_gdb (py3):      (git), python3-dev, build-essential, texinfo
-# libnx (xerpi):        (git), devkitARM, build-essential
+# libnx (xerpi):        (git), devkitARM, dkp_general-tools, build-essential
 # switch-tools (xerpi): (git), libnx, autotools-dev, automake, autoconf, build-essential, liblz4-dev, libelf-dev
 # dekotools:            (git), meson, ninja-build
 # deko3d (xerpi):       (git), dekotools, build-essential
@@ -99,16 +99,7 @@ RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
-FROM buildscripts AS general-tools
-
-# Clone devkitPro's general-tools and install it
-RUN git clone https://github.com/devkitPro/general-tools.git \
-    && cd general-tools && git checkout ${GENERALTOOLS_HASH} \
-    && ./autogen.sh \
-    && ./configure --prefix=${DEVKITPRO}/tools \
-    && make -j $MAKE_JOBS install
-
-FROM general-tools AS switch-tools
+FROM buildscripts AS switch-tools
 
 # Clone switch-tools fork and install it
 RUN git clone https://github.com/xerpi/switch-tools.git \
@@ -117,7 +108,16 @@ RUN cd switch-tools && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools \
     && make -j $MAKE_JOBS install
 
-FROM switch-tools AS libnx
+FROM switch-tools AS general-tools
+
+# Clone devkitPro's general-tools and install it
+RUN git clone https://github.com/devkitPro/general-tools.git \
+    && cd general-tools && git checkout ${GENERALTOOLS_HASH} \
+    && ./autogen.sh \
+    && ./configure --prefix=${DEVKITPRO}/tools \
+    && make -j $MAKE_JOBS install
+
+FROM general-tools AS libnx
 
 # Clone libnx fork and install it
 RUN git clone https://github.com/xerpi/libnx.git \
@@ -139,7 +139,7 @@ RUN git clone https://github.com/xerpi/deko3d.git
 RUN cd deko3d && git checkout ${DEKO3D_HASH} \
     && make -f Makefile.32 -j $MAKE_JOBS install
 
-FROM deko3d AS portlibs-prepare
+FROM libnx AS portlibs-prepare
 
 # Prepare portlibs
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
@@ -172,7 +172,7 @@ RUN cd SPIRV-Cross \
     -DSPIRV_CROSS_CLI:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
-FROM spirv AS fmt
+FROM portlibs-prepare AS fmt
 
 # Build and install fmt
 RUN cd fmt \
@@ -186,7 +186,7 @@ RUN cd fmt \
     -DFMT_TEST:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
-FROM fmt AS glslang
+FROM portlibs-prepare AS glslang
 
 # Build and install glslang
 RUN cd glslang \
@@ -203,7 +203,7 @@ RUN cd glslang \
     -DENABLE_SPVREMAPPER:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
-FROM glslang AS uam-host
+FROM portlibs-prepare AS uam-host
 
 # Build and install uam as a host executable
 RUN cd uam \
@@ -212,7 +212,7 @@ RUN cd uam \
     build_host
 RUN cd uam/build_host && ninja -j $MAKE_JOBS install
 
-FROM uam-host AS uam-switch
+FROM portlibs-prepare AS uam-switch
 
 # Add meson cross file for uam
 COPY cross_file_switch32.txt cross_file_switch32.txt
@@ -225,7 +225,7 @@ RUN cd uam \
     build
 RUN cd uam/build && ninja -j $MAKE_JOBS install
 
-FROM uam-switch AS miniz
+FROM portlibs-prepare AS miniz
 
 # Build and install miniz
 RUN cd miniz \
@@ -243,7 +243,14 @@ RUN cd miniz \
 
 FROM base AS final
 
-# Copy the entire $DEVKITPRO directory from the last build stage
+# Copy the entire $DEVKITPRO directory from build stages
+COPY --from=libnx --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=deko3d --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=spirv --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=glslang --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=fmt --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=uam-host --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
+COPY --from=uam-switch --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 COPY --from=miniz --chown=vita2hos:vita2hos $DEVKITPRO $DEVKITPRO
 
 # Use labels to make images easier to organize
