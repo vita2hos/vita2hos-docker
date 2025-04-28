@@ -2,6 +2,19 @@ FROM archlinux:base-devel AS base
 
 ARG MAKE_JOBS=1
 
+# Pinned commit hashes and tags
+ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
+ARG GENERALTOOLS_HASH=46086605cdc63fb02ba0ed08cdc00801ba00c6f0
+ARG SWITCHTOOLS_HASH=fb3204d69c51c44c3bba67027ee7c8295fd4f985
+ARG LIBNX32_HASH=be0f3aade5d3a6fd67c70a8e16a1f7dc8ab2cd30
+ARG DEKOTOOLS_HASH=aebf6e299383668ff1d337ad6cb3daca0d4c3754
+ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
+ARG UAM_HASH=97177458b362e6ed8848c8db0db2c31c58234df2
+ARG SPIRV_CROSS_VER=sdk-1.3.261.1
+ARG FMTLIB_VER=10.1.1
+ARG GLSLANG_VER=sdk-1.3.261.1
+ARG MINIZ_VER=3.0.2
+
 # Prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
 ENV DEVKITARM=/opt/devkitpro/devkitARM
@@ -82,7 +95,6 @@ WORKDIR /home/vita2hos
 FROM prepare AS buildscripts
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
-ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
@@ -91,7 +103,7 @@ FROM buildscripts AS general-tools
 
 # Clone devkitPro's general-tools and install it
 RUN git clone https://github.com/devkitPro/general-tools.git \
-    && cd general-tools \
+    && cd general-tools && git checkout ${GENERALTOOLS_HASH} \
     && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools \
     && make -j $MAKE_JOBS install
@@ -99,30 +111,30 @@ RUN git clone https://github.com/devkitPro/general-tools.git \
 FROM general-tools AS switch-tools
 
 # Clone switch-tools fork and install it
-RUN git clone https://github.com/xerpi/switch-tools.git --branch arm-32-bit-support
+RUN git clone https://github.com/xerpi/switch-tools.git \
+    && cd switch-tools && git checkout ${SWITCHTOOLS_HASH}
 RUN cd switch-tools && ./autogen.sh \
-    && ./configure --prefix=${DEVKITPRO}/tools/ \
+    && ./configure --prefix=${DEVKITPRO}/tools \
     && make -j $MAKE_JOBS install
 
 FROM switch-tools AS libnx
 
 # Clone libnx fork and install it
-ARG LIBNX32_HASH=be0f3aade5d3a6fd67c70a8e16a1f7dc8ab2cd30
-RUN git clone https://github.com/xerpi/libnx.git
-RUN cd libnx && git checkout ${LIBNX32_HASH} \
-    && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
+RUN git clone https://github.com/xerpi/libnx.git \
+    && cd libnx && git checkout ${LIBNX32_HASH}
+RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
 
 FROM libnx AS dekotools
 
 # Clone and install dekotools
-RUN git clone https://github.com/fincs/dekotools
+RUN git clone https://github.com/fincs/dekotools \
+    && cd dekotools && git checkout ${DEKOTOOLS_HASH}
 RUN cd dekotools && meson build --prefix $DEVKITPRO/tools
 RUN cd dekotools/build && ninja install -j $MAKE_JOBS
 
 FROM dekotools AS deko3d
 
 # Clone deko3d fork and install it
-ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
 RUN git clone https://github.com/xerpi/deko3d.git
 RUN cd deko3d && git checkout ${DEKO3D_HASH} \
     && make -f Makefile.32 -j $MAKE_JOBS install
@@ -130,18 +142,16 @@ RUN cd deko3d && git checkout ${DEKO3D_HASH} \
 FROM deko3d AS portlibs-prepare
 
 # Prepare portlibs
-ARG SPIRV_CROSS_VER=sdk-1.3.261.1
-ARG FMTLIB_VER=10.1.1
-ARG GLSLANG_VER=sdk-1.3.261.1
-ARG MINIZ_VER=3.0.2
 RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd SPIRV-Cross && git checkout tags/${SPIRV_CROSS_VER} -b ${SPIRV_CROSS_VER} && cd .. \
     && git clone https://github.com/fmtlib/fmt \
     && cd fmt && git checkout tags/${FMTLIB_VER} -b ${FMTLIB_VER} && cd .. \
     && git clone https://github.com/KhronosGroup/glslang \
     && cd glslang && git checkout tags/${GLSLANG_VER} -b ${GLSLANG_VER} && cd .. \
-    && git clone https://github.com/xerpi/uam --branch switch-32 \
-    && git clone https://github.com/richgel999/miniz.git --branch ${MINIZ_VER}
+    && git clone https://github.com/xerpi/uam \
+    && cd uam && git checkout ${UAM_HASH} && cd .. \
+    && git clone https://github.com/richgel999/miniz \
+    && cd miniz && git checkout tags/${MINIZ_VER} -b ${MINIZ_VER} && cd ..
 
 FROM portlibs-prepare AS spirv
 
