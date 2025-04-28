@@ -33,7 +33,11 @@ RUN echo "export DEVKITPRO=${DEVKITPRO}" > /etc/profile.d/devkit-env.sh \
     && echo "export PATH=${DEVKITPRO}/tools/bin:$PATH" >> /etc/profile.d/devkit-env.sh
 
 # Create devkitpro dir
-RUN mkdir -p -m 0755 ${DEVKITPRO}
+RUN mkdir -p -m 0775 ${DEVKITPRO} && chown -R vita2hos:vita2hos ${DEVKITPRO}
+
+# Copy devkitPro cmake files from the official docker images
+COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
+COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
 
 # ------- Information about apt packages --------
 # Mako:                 (python3, python3-pip, python3-setuptools)
@@ -69,32 +73,7 @@ RUN pacman -Syu --needed --noconfirm \
     libmpc libtool automake autoconf lz4 libelf xz bzip2 \
     && pacman -Scc --noconfirm
 
-# Add devkitPro pacman repository
-RUN echo "[dkp-libs]" >> /etc/pacman.conf && \
-    echo "Server = https://pkg.devkitpro.org/packages" >> /etc/pacman.conf && \
-    echo "[dkp-linux]" >> /etc/pacman.conf && \
-    echo "Server = https://pkg.devkitpro.org/packages/linux/\$arch/" >> /etc/pacman.conf
-
-# Import and sign the devkitPro GPG key, install devkitPro keyring package and populate the keyring
-RUN pacman-key --init && \
-    pacman-key --recv BC26F752D25B92CE272E0F44F7FD5492264BB9D0 --keyserver keyserver.ubuntu.com && \
-    pacman-key --lsign BC26F752D25B92CE272E0F44F7FD5492264BB9D0 && \
-    pacman -U --noconfirm https://pkg.devkitpro.org/devkitpro-keyring.pkg.tar.zst && \
-    pacman-key --populate devkitpro && \
-    pacman -Syu
-
-# Install devkitPro's general-tools and switch-cmake
-RUN pacman -Sy --noconfirm general-tools dkp-cmake-common-utils devkitarm-cmake switch-cmake
-
-# Change ownership of the devkitPro directory
-RUN chown -R vita2hos:vita2hos ${DEVKITPRO}
-
 FROM base AS prepare
-
-# Download public key for github.com
-RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-RUN ls -la /home
 
 # Switch to vita2hos user
 USER vita2hos
@@ -108,7 +87,16 @@ RUN git clone https://github.com/xerpi/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
-FROM buildscripts AS switch-tools
+FROM buildscripts AS general-tools
+
+# Clone devkitPro's general-tools and install it
+RUN git clone https://github.com/devkitPro/general-tools.git \
+    && cd general-tools \
+    && ./autogen.sh \
+    && ./configure --prefix=${DEVKITPRO}/tools \
+    && make -j $MAKE_JOBS install
+
+FROM general-tools AS switch-tools
 
 # Clone switch-tools fork and install it
 RUN git clone https://github.com/xerpi/switch-tools.git --branch arm-32-bit-support
