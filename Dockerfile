@@ -149,6 +149,7 @@ FROM portlibs-prepare AS spirv
 RUN cd SPIRV-Cross \
     && mkdir build && cd build \
     && cmake .. \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
     -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
@@ -220,6 +221,7 @@ FROM uam-switch AS miniz
 RUN cd miniz \
     && mkdir build && cd build \
     && cmake .. \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_TOOLCHAIN_FILE=${DEVKITPRO}/cmake/devkitARM.cmake \
     -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=${DEVKITPRO}/cmake/Platform/NintendoSwitch.cmake \
     -DCMAKE_EXE_LINKER_FLAGS="-specs=${NX_ROOT}/switch32.specs" \
