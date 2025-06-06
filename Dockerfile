@@ -12,7 +12,7 @@ ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
 ARG UAM_HASH=97177458b362e6ed8848c8db0db2c31c58234df2
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
 ARG FMTLIB_VER=10.1.1
-ARG GLSLANG_VER=sdk-1.3.261.1
+ARG GLSLANG_VER=15.3.0
 ARG MINIZ_VER=3.0.2
 
 # Use labels to make images easier to organize
@@ -205,6 +205,8 @@ RUN cd glslang \
     -DENABLE_GLSLANG_BINARIES:BOOL=OFF \
     -DENABLE_CTEST:BOOL=OFF \
     -DENABLE_SPVREMAPPER:BOOL=OFF \
+    -DENABLE_OPT:BOOL=OFF \
+    -DGLSLANG_TESTS:BOOL=OFF \
     && cmake --build . --target install --parallel $MAKE_JOBS
 
 FROM portlibs-prepare AS uam-host
