@@ -7,7 +7,7 @@ ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
 ARG GENERALTOOLS_HASH=46086605cdc63fb02ba0ed08cdc00801ba00c6f0
 ARG SWITCHTOOLS_HASH=fb3204d69c51c44c3bba67027ee7c8295fd4f985
 ARG LIBNX32_HASH=be0f3aade5d3a6fd67c70a8e16a1f7dc8ab2cd30
-ARG DEKOTOOLS_HASH=0479bc8aa23df5bf4eaceb3311e3012e1a0bc012
+ARG DEKOTOOLS_HASH=c15523cea963c04fad77a46f23c3a96d26a86ab9
 ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
 ARG UAM_HASH=97177458b362e6ed8848c8db0db2c31c58234df2
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
@@ -131,7 +131,7 @@ RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
 FROM libnx AS dekotools
 
 # Clone and install dekotools
-RUN git clone https://github.com/xerpi/dekotools \
+RUN git clone https://github.com/devkitPro/dekotools \
     && cd dekotools && git checkout ${DEKOTOOLS_HASH}
 RUN cd dekotools && meson build --prefix $DEVKITPRO/tools
 RUN cd dekotools/build && ninja install -j $MAKE_JOBS
