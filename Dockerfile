@@ -98,9 +98,12 @@ WORKDIR /home/vita2hos
 
 FROM prepare AS buildscripts
 
+COPY download-archives.sh /tmp/
+
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
 RUN git clone https://github.com/vita2hos/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
+    && /tmp/download-archives.sh \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
 FROM buildscripts AS switch-tools
