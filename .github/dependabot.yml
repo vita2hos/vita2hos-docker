@@ -10,7 +10,5 @@ updates:
     schedule:
       interval: "daily"
       timezone: "Europe/Berlin"
-    reviewers:
-      - "TSRBerry"
     commit-message:
       prefix: "dep gha"
