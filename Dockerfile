@@ -3,12 +3,12 @@ FROM archlinux:base-devel AS base
 ARG MAKE_JOBS=1
 
 # Pinned commit hashes and tags
-ARG BUILDSCRIPTS_HASH=d707f1e4f987c6fdb5af05c557e26c1cc868f734
+ARG BUILDSCRIPTS_HASH=7a83c88ccb787a92cd0f5fd7eb0b183c435e8b19
 ARG GENERALTOOLS_HASH=46086605cdc63fb02ba0ed08cdc00801ba00c6f0
-ARG SWITCHTOOLS_HASH=fb3204d69c51c44c3bba67027ee7c8295fd4f985
-ARG LIBNX32_HASH=be0f3aade5d3a6fd67c70a8e16a1f7dc8ab2cd30
+ARG SWITCHTOOLS_HASH=66dd4dd14b7dc26f256b90fc73ace533ceaf62a2
+ARG LIBNX32_HASH=bfadb4639a55879cb622492d079500a7ed0da71c
 ARG DEKOTOOLS_HASH=c15523cea963c04fad77a46f23c3a96d26a86ab9
-ARG DEKO3D_HASH=9900322a40957fa47bed764b20ec00cb4e870f66
+ARG DEKO3D_HASH=3be4511e1b7359a2bc8828b6d2ac8f7cdaf17723
 ARG UAM_HASH=97177458b362e6ed8848c8db0db2c31c58234df2
 ARG SPIRV_CROSS_VER=sdk-1.3.261.1
 ARG FMTLIB_VER=11.1.4
@@ -57,26 +57,26 @@ COPY --from=devkitpro/devkitarm --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${D
 COPY --from=devkitpro/devkita64 --chown=vita2hos:vita2hos ${DEVKITPRO}/cmake ${DEVKITPRO}/cmake
 
 # ------- Information about apt packages --------
-# Mako:                 (python3, python3-pip, python3-setuptools)
+# Mako:                    (python3, python3-pip, python3-setuptools)
 # // https://github.com/devkitPro/docker/blob/master/toolchain-base/Dockerfile doesn't look optimized
-# DKP-Pacman:           wget, pkg-config, git, make, cmake, xz-utils, gpg, bzip2
-# VPDM:                 cmake, patch, tar, curl, git, python
-# binutils:             (wget, tar, gzip), build-essential
+# DKP-Pacman:              wget, pkg-config, git, make, cmake, xz-utils, gpg, bzip2
+# VPDM:                    cmake, patch, tar, curl, git, python
+# binutils:                (wget, tar, gzip), build-essential
 # // http://gcc.gnu.org/install/prerequisites.html
-# gcc:                  (wget), tar, gzip, patch, build-essential, libgmp-dev libmpfr-dev libmpc-dev
-# newlib:               (wget, tar, gzip, patch), build-essential
-# dkp_general-tools:    (git), autotools-dev, automake, autoconf, build-essential
-# dkARM_rules:          (wget, tar, gzip), build-essential
-# dkARM_crt0:           (wget, tar, gzip), build-essential
-# dkARM_gdb (py3):      (git), python3-dev, build-essential, texinfo
-# libnx (xerpi):        (git), devkitARM, dkp_general-tools, build-essential
-# switch-tools (xerpi): (git), libnx, autotools-dev, automake, autoconf, build-essential, liblz4-dev, libelf-dev
-# dekotools:            (git), meson, ninja-build
-# deko3d (xerpi):       (git), dekotools, build-essential
-# SPIRV-Cross:          (git), cmake, build-essential
-# fmt:                  (git), cmake, build-essential
-# glslang:              (git), cmake, python3, (bison)
-# UAM (xerpi):          (git), meson, ninja-build, Mako[python3]
+# gcc:                     (wget), tar, gzip, patch, build-essential, libgmp-dev libmpfr-dev libmpc-dev
+# newlib:                  (wget, tar, gzip, patch), build-essential
+# dkp_general-tools:       (git), autotools-dev, automake, autoconf, build-essential
+# dkARM_rules:             (wget, tar, gzip), build-essential
+# dkARM_crt0:              (wget, tar, gzip), build-essential
+# dkARM_gdb (py3):         (git), python3-dev, build-essential, texinfo
+# libnx (vita2hos):        (git), devkitARM, dkp_general-tools, build-essential
+# switch-tools (vita2hos): (git), libnx, autotools-dev, automake, autoconf, build-essential, liblz4-dev, libelf-dev
+# dekotools:               (git), meson, ninja-build
+# deko3d (vita2hos):       (git), dekotools, build-essential
+# SPIRV-Cross:             (git), cmake, build-essential
+# fmt:                     (git), cmake, build-essential
+# glslang:                 (git), cmake, python3, (bison)
+# UAM (vita2hos):          (git), meson, ninja-build, Mako[python3]
 
 # Install all the required base packages
 RUN pacman -Syu --needed --noconfirm \
@@ -99,14 +99,14 @@ WORKDIR /home/vita2hos
 FROM prepare AS buildscripts
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
-RUN git clone https://github.com/xerpi/buildscripts.git \
+RUN git clone https://github.com/vita2hos/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
 FROM buildscripts AS switch-tools
 
 # Clone switch-tools fork and install it
-RUN git clone https://github.com/xerpi/switch-tools.git \
+RUN git clone https://github.com/vita2hos/switch-tools.git \
     && cd switch-tools && git checkout ${SWITCHTOOLS_HASH}
 RUN cd switch-tools && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools \
@@ -124,7 +124,7 @@ RUN git clone https://github.com/devkitPro/general-tools.git \
 FROM general-tools AS libnx
 
 # Clone libnx fork and install it
-RUN git clone https://github.com/xerpi/libnx.git \
+RUN git clone https://github.com/vita2hos/libnx.git \
     && cd libnx && git checkout ${LIBNX32_HASH}
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
 
@@ -139,7 +139,7 @@ RUN cd dekotools/build && ninja install -j $MAKE_JOBS
 FROM dekotools AS deko3d
 
 # Clone deko3d fork and install it
-RUN git clone https://github.com/xerpi/deko3d.git
+RUN git clone https://github.com/vita2hos/deko3d.git
 RUN cd deko3d && git checkout ${DEKO3D_HASH} \
     && make -f Makefile.32 -j $MAKE_JOBS install
 
@@ -152,7 +152,7 @@ RUN git clone https://github.com/KhronosGroup/SPIRV-Cross \
     && cd fmt && git checkout tags/${FMTLIB_VER} -b ${FMTLIB_VER} && cd .. \
     && git clone https://github.com/KhronosGroup/glslang \
     && cd glslang && git checkout tags/${GLSLANG_VER} -b ${GLSLANG_VER} && cd .. \
-    && git clone https://github.com/xerpi/uam \
+    && git clone https://github.com/vita2hos/uam \
     && cd uam && git checkout ${UAM_HASH} && cd .. \
     && git clone https://github.com/richgel999/miniz \
     && cd miniz && git checkout tags/${MINIZ_VER} -b ${MINIZ_VER} && cd ..
