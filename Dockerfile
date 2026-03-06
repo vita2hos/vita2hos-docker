@@ -127,8 +127,15 @@ RUN git clone https://github.com/devkitPro/general-tools.git \
 FROM general-tools AS libnx
 
 # Clone libnx fork and install it
+# FIXME: Fix the include properly
+#        It includes $DEVKITARM/lib/gcc/arm-none-eabi/15.2.0/include/limits.h
+#        which should include $DEVKITARM/arm-none-eabi/include/limits.h
+#        but for some reason that doesn't happen.
+#        As far as I can see the default include paths are correct,
+#        so I really don't know why it behaves differently for devkitA64.
 RUN git clone https://github.com/vita2hos/libnx.git \
-    && cd libnx && git checkout ${LIBNX32_HASH}
+    && cd libnx && git checkout ${LIBNX32_HASH} \
+    && sed -i 's%#include <limits.h>%#include <limits.h>\n#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif%' ./nx/source/runtime/devices/path_buf.h
 RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
 
 FROM libnx AS dekotools
