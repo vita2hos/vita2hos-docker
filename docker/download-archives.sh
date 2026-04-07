@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #------------------------------------------------------------
-# In case someone from devKitPro finds this:
+# In case someone from devkitPro finds this:
 # I'm truly sorry for creating this script.
 # I'd much prefer to use the packages as you release them,
 # but without support for 32-bit binaries on the switch

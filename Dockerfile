@@ -1,6 +1,9 @@
 FROM archlinux:base-devel AS base
 
 ARG MAKE_JOBS=1
+ARG MAKEFLAGS="-j ${MAKE_JOBS}"
+ARG CMAKE_BUILD_PARALLEL_LEVEL="${MAKE_JOBS}"
+ARG NINJA_JOBS="${MAKE_JOBS}"
 
 # Pinned commit hashes and tags
 ARG BUILDSCRIPTS_HASH=7a83c88ccb787a92cd0f5fd7eb0b183c435e8b19
@@ -96,15 +99,17 @@ FROM base AS prepare
 USER vita2hos
 WORKDIR /home/vita2hos
 
+COPY docker/ninja.sh /tmp/
+
 FROM prepare AS buildscripts
 
-COPY download-archives.sh /tmp/
+COPY docker/download-archives.sh /tmp/
 
 # Run devkitPro's buildscripts to install GCC, binutils and newlib (1 = devkitARM)
 RUN git clone https://github.com/vita2hos/buildscripts.git \
     && cd buildscripts && git checkout ${BUILDSCRIPTS_HASH} \
     && /tmp/download-archives.sh \
-    && MAKEFLAGS="-j ${MAKE_JOBS}" BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
+    && BUILD_DKPRO_AUTOMATED=1 BUILD_DKPRO_PACKAGE=1 ./build-devkit.sh
 
 FROM buildscripts AS switch-tools
 
@@ -113,7 +118,7 @@ RUN git clone https://github.com/vita2hos/switch-tools.git \
     && cd switch-tools && git checkout ${SWITCHTOOLS_HASH}
 RUN cd switch-tools && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools \
-    && make -j $MAKE_JOBS install
+    && make install
 
 FROM switch-tools AS general-tools
 
@@ -122,7 +127,7 @@ RUN git clone https://github.com/devkitPro/general-tools.git \
     && cd general-tools && git checkout ${GENERALTOOLS_HASH} \
     && ./autogen.sh \
     && ./configure --prefix=${DEVKITPRO}/tools \
-    && make -j $MAKE_JOBS install
+    && make install
 
 FROM general-tools AS libnx
 
@@ -136,7 +141,7 @@ FROM general-tools AS libnx
 RUN git clone https://github.com/vita2hos/libnx.git \
     && cd libnx && git checkout ${LIBNX32_HASH} \
     && sed -i 's%#include <limits.h>%#include <limits.h>\n#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif%' ./nx/source/runtime/devices/path_buf.h
-RUN cd libnx && make -j $MAKE_JOBS -C nx/ -f Makefile.32 install
+RUN cd libnx && make -C nx/ -f Makefile.32 install
 
 FROM libnx AS dekotools
 
@@ -144,14 +149,14 @@ FROM libnx AS dekotools
 RUN git clone https://github.com/devkitPro/dekotools \
     && cd dekotools && git checkout ${DEKOTOOLS_HASH}
 RUN cd dekotools && meson build --prefix $DEVKITPRO/tools
-RUN cd dekotools/build && ninja install -j $MAKE_JOBS
+RUN cd dekotools/build && /tmp/ninja.sh install
 
 FROM dekotools AS deko3d
 
 # Clone deko3d fork and install it
 RUN git clone https://github.com/vita2hos/deko3d.git
 RUN cd deko3d && git checkout ${DEKO3D_HASH} \
-    && make -f Makefile.32 -j $MAKE_JOBS install
+    && make -f Makefile.32 install
 
 FROM libnx AS portlibs-prepare
 
@@ -184,7 +189,7 @@ RUN cd SPIRV-Cross \
     -DSPIRV_CROSS_ENABLE_MSL:BOOL=OFF \
     -DSPIRV_CROSS_FORCE_PIC:BOOL=ON \
     -DSPIRV_CROSS_CLI:BOOL=OFF \
-    && cmake --build . --target install --parallel $MAKE_JOBS
+    && cmake --build . --target install
 
 FROM portlibs-prepare AS fmt
 
@@ -198,7 +203,7 @@ RUN cd fmt \
     -DCMAKE_INSTALL_PREFIX=${NX_ROOT} \
     -DCMAKE_BUILD_TYPE=Release \
     -DFMT_TEST:BOOL=OFF \
-    && cmake --build . --target install --parallel $MAKE_JOBS
+    && cmake --build . --target install
 
 FROM portlibs-prepare AS glslang
 
@@ -217,7 +222,7 @@ RUN cd glslang \
     -DENABLE_SPVREMAPPER:BOOL=OFF \
     -DENABLE_OPT:BOOL=OFF \
     -DGLSLANG_TESTS:BOOL=OFF \
-    && cmake --build . --target install --parallel $MAKE_JOBS
+    && cmake --build . --target install
 
 FROM portlibs-prepare AS uam-host
 
@@ -226,12 +231,12 @@ RUN cd uam \
     && meson \
     --prefix $DEVKITPRO/tools \
     build_host
-RUN cd uam/build_host && ninja -j $MAKE_JOBS install
+RUN cd uam/build_host && /tmp/ninja.sh install
 
 FROM portlibs-prepare AS uam-switch
 
 # Add meson cross file for uam
-COPY cross_file_switch32.txt cross_file_switch32.txt
+COPY docker/cross_file_switch32.txt cross_file_switch32.txt
 
 # Build and install uam
 RUN cd uam \
@@ -239,7 +244,7 @@ RUN cd uam \
     --cross-file ../cross_file_switch32.txt \
     --prefix $DEVKITPRO/libnx32 \
     build
-RUN cd uam/build && ninja -j $MAKE_JOBS install
+RUN cd uam/build && /tmp/ninja.sh install
 
 FROM portlibs-prepare AS miniz
 
@@ -255,7 +260,7 @@ RUN cd miniz \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS:BOOL=OFF \
     -DBUILD_EXAMPLES:BOOL=OFF \
-    && cmake --build . --target install --parallel $MAKE_JOBS
+    && cmake --build . --target install
 
 FROM base AS final
 
