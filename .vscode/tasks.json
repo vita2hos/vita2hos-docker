@@ -3,14 +3,9 @@
   "tasks": [
     {
       "label": "Build Docker Image",
-      "command": "docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .",
+      "command": "docker build --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .",
       "type": "shell",
       "args": [],
-      "options": {
-        "env": {
-          "DOCKER_BUILDKIT": "1"
-        }
-      },
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
@@ -66,7 +61,7 @@
     },
     {
       "label": "Clear buildx cache",
-      "command": "sudo docker buildx prune -f",
+      "command": "docker buildx prune -f",
       "type": "shell",
       "args": [],
       "problemMatcher": [],

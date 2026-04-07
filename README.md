@@ -48,5 +48,5 @@ docker run --rm -it -v $(pwd):/vita2hos ghcr.io/vita2hos/vita2hos-dev:<tag> bash
 1. Run this command to build the image and add the tag `vita2hos-dev` to it
 
     ```bash
-    docker build --ssh default=${SSH_AUTH_SOCK} --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .
+    docker build --build-arg MAKE_JOBS=$(($(nproc) - 2)) -t vita2hos-dev .
     ```

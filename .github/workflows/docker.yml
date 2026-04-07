@@ -49,11 +49,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: latest
 
-      - name: Start SSH-Agent
-        uses: webfactory/ssh-agent@v0.10.0
-        with:
-          ssh-private-key: ${{ secrets.XERPI_DEPLOY_KEY }}
-
       - name: Determine number of processors
         id: cpu_info
         run: |
@@ -73,8 +68,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          ssh: |
-            default=${{ env.SSH_AUTH_SOCK }}
 
   create_devcontainer:
     needs: build_and_push

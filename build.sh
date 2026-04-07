@@ -2,4 +2,4 @@
 
 script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
-docker build --pull --ssh default="${SSH_AUTH_SOCK}" --build-arg MAKE_JOBS=$(($(nproc) - 2)) "$@" -t vita2hos-dev "$script_dir"
+docker build --pull --build-arg MAKE_JOBS=$(($(nproc) - 2)) "$@" -t vita2hos-dev "$script_dir"
