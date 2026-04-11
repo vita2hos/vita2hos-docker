@@ -19,8 +19,17 @@ ARG GLSLANG_VER=15.3.0
 ARG MINIZ_VER=3.0.2
 
 # Use labels to make images easier to organize
-LABEL libnx32.version="${LIBNX32_HASH}"
 LABEL buildscripts.version="${BUILDSCRIPTS_HASH}"
+LABEL general-tools.version="${GENERALTOOLS_HASH}"
+LABEL switch-tools.version="${SWITCHTOOLS_HASH}"
+LABEL libnx32.version="${LIBNX32_HASH}"
+LABEL dekotools.version="${DEKOTOOLS_HASH}"
+LABEL deko3d.version="${DEKO3D_HASH}"
+LABEL uam.version="${UAM_HASH}"
+LABEL spirv.version="${SPIRV_CROSS_VER}"
+LABEL fmtlib.version="${FMTLIB_VER}"
+LABEL glslang.version="${GLSLANG_VER}"
+LABEL miniz.version="${MINIZ_VER}"
 
 # Prepare devkitpro env
 ENV DEVKITPRO=/opt/devkitpro
