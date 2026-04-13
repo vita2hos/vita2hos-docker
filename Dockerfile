@@ -6,7 +6,7 @@ ARG CMAKE_BUILD_PARALLEL_LEVEL="${MAKE_JOBS}"
 ARG NINJA_JOBS="${MAKE_JOBS}"
 
 # Pinned commit hashes and tags
-ARG BUILDSCRIPTS_HASH=7a83c88ccb787a92cd0f5fd7eb0b183c435e8b19
+ARG BUILDSCRIPTS_HASH=d91d602f07f1ab533d8b374b0ab09381a67329fd
 ARG GENERALTOOLS_HASH=46086605cdc63fb02ba0ed08cdc00801ba00c6f0
 ARG SWITCHTOOLS_HASH=66dd4dd14b7dc26f256b90fc73ace533ceaf62a2
 ARG LIBNX32_HASH=467608d2e55fc4dae90b23f0563421626dc8dc81
@@ -141,15 +141,8 @@ RUN git clone https://github.com/devkitPro/general-tools.git \
 FROM general-tools AS libnx
 
 # Clone libnx fork and install it
-# FIXME: Fix the include properly
-#        It includes $DEVKITARM/lib/gcc/arm-none-eabi/15.2.0/include/limits.h
-#        which should include $DEVKITARM/arm-none-eabi/include/limits.h
-#        but for some reason that doesn't happen.
-#        As far as I can see the default include paths are correct,
-#        so I really don't know why it behaves differently for devkitA64.
 RUN git clone https://github.com/vita2hos/libnx.git \
-    && cd libnx && git checkout ${LIBNX32_HASH} \
-    && sed -i 's%#include <limits.h>%#include <limits.h>\n#ifndef PATH_MAX\n#define PATH_MAX 4096\n#endif%' ./nx/source/runtime/devices/path_buf.h
+    && cd libnx && git checkout ${LIBNX32_HASH}
 RUN cd libnx && make -C nx/ -f Makefile.32 install
 
 FROM libnx AS dekotools
