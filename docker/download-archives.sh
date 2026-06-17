@@ -21,12 +21,20 @@ BUILD_DKPRO_PACKAGE="1"
 DKARM_RULES_VER="$(grep -e 'DKARM_RULES_VER=' ./build-devkit.sh | awk -F'=' '{print $2}')"
 DKARM_CRTLS_VER="$(grep -e 'DKARM_CRTLS_VER=' ./build-devkit.sh | awk -F'=' '{print $2}')"
 
-# Download dkp archives
-archives="binutils-${BINUTILS_VER}.tar.xz gcc-${GCC_VER}.tar.xz newlib-${NEWLIB_VER}.tar.gz"
-archives="devkitarm-rules-$DKARM_RULES_VER.tar.gz devkitarm-crtls-$DKARM_CRTLS_VER.tar.gz $archives"
-
-for archive in $archives
+# Download GNU archives
+gnu_archive_names=("binutils-${BINUTILS_VER}.tar.xz" "gcc-${GCC_VER}.tar.xz" "newlib-${NEWLIB_VER}.tar.gz")
+gnu_archive_urls=("https://ftpmirror.gnu.org/gnu/binutils/${gnu_archive_names[0]}" "https://ftpmirror.gnu.org/gnu/gcc/gcc-${GCC_VER}/${gnu_archive_names[1]}" "ftp://sourceware.org/pub/newlib/${gnu_archive_names[2]}")
+for (( i=0; i<${#gnu_archive_names[@]}; i++))
 do
-    echo $archive
-    wget -U 'Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0' https://downloads.devkitpro.org/$archive
+    echo "${gnu_archive_names[$i]}"
+    wget -nv --retry-on-http-error=502 "${gnu_archive_urls[$i]}"
+done
+
+# Download dkp archives
+archives=("devkitarm-rules-${DKARM_RULES_VER}.tar.gz" "devkitarm-crtls-${DKARM_CRTLS_VER}.tar.gz")
+
+for archive in "${archives[@]}"
+do
+    echo "${archive}"
+    wget -nv -U 'Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0' "https://downloads.devkitpro.org/${archive}"
 done
