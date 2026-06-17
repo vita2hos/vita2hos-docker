@@ -27,7 +27,7 @@ gnu_archive_urls=("https://ftpmirror.gnu.org/gnu/binutils/${gnu_archive_names[0]
 for (( i=0; i<${#gnu_archive_names[@]}; i++))
 do
     echo "${gnu_archive_names[$i]}"
-    wget -nv --retry-on-http-error=502 "${gnu_archive_urls[$i]}"
+    wget -nv --retry-on-host-error --retry-on-http-error=502 "${gnu_archive_urls[$i]}"
 done
 
 # Download dkp archives
